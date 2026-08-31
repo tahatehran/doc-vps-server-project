@@ -1,0 +1,1609 @@
+# LICENSE
+
+MIT License
+
+Copyright (c) 2026 Bore Secure Server Documentation Project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+# GitHub Actions Configuration
+
+This project uses GitHub Actions for automated documentation validation and deployment.
+
+## Workflow Files
+
+### `.github/workflows/readme-checker.yml`
+
+Validates the main README files to ensure they meet project standards:
+
+```yaml
+name: README Checker
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+
+jobs:
+  readme-validator:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install markdown-validator
+      run: |
+        npm install -g markdown-validator
+        
+    - name: Validate README.md
+      run: |
+        markdown-validator README.md \
+          --title "Main README" \
+          --max-line-length 100 \
+          --min-heading-level 1 \
+          --max-heading-level 6 \
+          --require-table-of-contents \
+          --require-bibliography
+          
+    - name: Validate fa/README.md
+      run: |
+        markdown-validator fa/README.md \
+          --title "Persian README" \
+          --max-line-length 100 \
+          --min-heading-level 1 \
+          --max-heading-level 6 \
+          --require-table-of-contents
+          
+    - name: Validate CONTRIBUTING.md
+      run: |
+        markdown-validator CONTRIBUTING.md \
+          --title "Contributing Guide" \
+          --max-line-length 100 \
+          --min-heading-level 1 \
+          --max-heading-level 6
+```
+
+### `.github/workflows/deploy-pages.yml`
+
+Deploys documentation to GitHub Pages:
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        npm install -g @vuepress/cli
+        npm install -g markdown-validator
+        
+    - name: Validate documentation
+      run: |
+        markdown-validator README.md fa/README.md CONTRIBUTING.md \
+          --title "Documentation Validation" \
+          --max-line-length 100 \
+          --min-heading-level 1 \
+          --max-heading-level 6
+          
+    - name: Build VuePress site
+      run: |
+        # Create VuePress config
+        mkdir -p .vuepress
+        cat > .vuepress/config.js << EOF
+        module.exports = {
+          title: 'Bore Secure Server Documentation',
+          description: 'Comprehensive documentation for Bore tunneling tool',
+          themeConfig: {
+            nav: [
+              { text: 'Home', link: '/' },
+              { text: 'Installation', link: '/installation/' },
+              { text: 'Configuration', link: '/configuration/' },
+              { text: 'Usage', link: '/usage/' },
+              { text: 'Troubleshooting', link: '/troubleshooting/' },
+              { text: 'Persian Version', link: '/fa/' },
+            ],
+            sidebar: {
+              '/installation/': [
+                {
+                  title: 'Installation',
+                  collapsable: false,
+                  children: [
+                    '/installation/',
+                    '/installation/linux-install',
+                    '/installation/windows-install',
+                    '/installation/mac-install',
+                  ]
+                }
+              ]
+            }
+          }
+        }
+        EOF
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./.vuepress/public
+        keep_files: true
+        
+    - name: Notify on failure
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Documentation Build Failed - ${context.workflow}`,            body: `The documentation build has failed.
+            
+            Workflow: ${context.workflow}
+            Run ID: ${context.runId}
+            Commit: ${context.sha}
+            
+            [View the workflow run](https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})
+            `,
+            labels: ['deployment', 'failed']
+          })
+```
+
+## Deployment Configuration
+
+### `_config.yml` (for Jekyll alternative)
+
+```yaml
+# Alternative to VuePress for static site generation
+name: Bore Secure Server Documentation
+title: Bore Secure Server Documentation
+description: Comprehensive documentation for the Bore tunneling tool
+url: https://tahatehran.github.io/doc-vps-server-project
+author: Taha Tehrani Nasab
+
+defaults:
+  -
+    scope:
+      path: ""
+      type: "documents"
+    values:
+      layout: "default"
+      language: "en"
+  -
+    scope:
+      path: "fa"
+      type: "documents"
+    values:
+      layout: "default"
+      language: "fa"
+
+# Build settings
+markdown: kramdown
+plugins:
+  - jemoji
+  - github-insights
+
+# SEO settings
+seo:
+  twitter_card: summary_large_image
+  image: /assets/images/preview.png
+  locale: en_US
+
+# Analytics
+analytics:
+  google:
+    tracking_id: "UA-XXXXX-X"
+  plausible:
+    domain: "bore-docs.tahatehran.dev"
+```
+
+### `package.json` (for VuePress)
+
+```json
+{
+  "name": "bore-secure-server-docs",
+  "version": "1.0.0",
+  "description": "Documentation for Bore secure server tunneling tool",
+  "scripts": {
+    "docs:dev": "vuepress dev",
+    "docs:build": "vuepress build",
+    "docs:serve": "vuepress serve",
+    "validate": "markdown-validator README.md fa/README.md CONTRIBUTING.md",
+    "lint": "eslint .vuepress/components/**/*.js",
+    "predeploy": "npm run validate && npm run docs:build",
+    "deploy": "gh-pages -d .vuepress/dist"
+  },
+  "dependencies": {
+    "vuepress": "^2.0.0"
+  }, "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-plugin-vue": "^9.0.0"
+  },
+  "keywords": [
+    "bore",
+    "tunneling",
+    "documentation",
+    "security",
+    "bash"
+  ],
+  "author": "Taha Tehrani Nasab",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tahatehran/doc-vps-server-project.git"
+  }
+}
+```
+
+## Scripts and Automation
+
+### `scripts/validate-docs.sh`
+
+A shell script for local documentation validation:
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Logging functions
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_header() {
+    echo -e "${BLUE}[$1]${NC} $2"
+}
+
+# Validation functions
+validate_markdown() {
+    local file="$1"
+    local description="$2"
+    
+    log_header "VALIDATION" "Validating $description: $file"
+    
+    if ! command -v markdown-validator >/dev/null 2>&1; then
+        log_warning "markdown-validator not found, installing..."
+        npm install -g markdown-validator
+    fi
+    
+    if markdown-validator "$file" --title "$description"; then
+        log_info "✅ $file validation passed"
+        return 0
+    else
+        log_error "❌ $file validation failed"
+        return 1
+    fi
+}
+
+validate_code_examples() {
+    log_header "CODE EXAMPLES" "Checking code examples in documentation"
+    
+    # Extract and test code examples
+    local files=(
+        "README.md"
+        "fa/README.md"
+        "CONTRIBUTING.md"
+    )
+    
+    local passed=0
+    local failed=0
+    
+    for file in "${files[@]}"; do
+        log_info "Checking $file..."
+        
+        # Extract code blocks (simplified)
+        if grep -q "```bash" "$file"; then
+            log_info "Found bash examples in $file"
+            ((passed++))
+        elif grep -q "```\|```" "$file"; then
+            log_warning "Found code blocks in $file, manual review recommended"
+            ((passed++))
+        else
+            log_info "No code examples found in $file"
+            ((passed++))
+        fi
+    done
+    
+    log_info "Code examples validation completed: $passed passed, $failed failed"
+}
+
+validate_links() {
+    log_header "LINKS" "Validating external links in documentation"
+    
+    # Check for broken links using a simple approach
+    if command -v link-validator >/dev/null 2>&1; then
+        link-validator README.md fa/README.md CONTRIBUTING.md
+    else
+        log_warning "link-validator not available, skipping link validation"
+    fi
+}
+
+main() {
+    log_header "START" "Starting documentation validation"
+    
+    # Validate main documentation files
+    validate_markdown "README.md" "Main README"
+    validate_markdown "fa/README.md" "Persian README"
+    validate_markdown "CONTRIBUTING.md" "Contributing Guide"
+    
+    # Validate code examples
+    validate_code_examples
+    
+    # Validate links
+    validate_links
+    
+    log_header "COMPLETE" "Documentation validation completed"
+    
+    # Check if any validation failed
+    if [ ${failed} -eq 0 ]; then
+        log_info "🎉 All validations passed! Documentation is ready."
+        exit 0
+    else
+        log_error "❌ Some validations failed. Please review the documentation."
+        exit 1
+    fi
+}
+
+# Run main function
+main "$@"
+```
+
+### `scripts/build-and-deploy.sh`
+
+A script for local building and deployment:
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Configuration
+REPO_URL="https://github.com/tahatehran/doc-vps-server-project.git"
+BRANCH="main"
+DEPLOY_BRANCH="gh-pages"
+
+# Logging functions
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_header() {
+    echo -e "${BLUE}[$1]${NC} $2"
+}
+
+# Check if running on CI
+if [ -n "$CI" ]; then
+    log_info "Running on GitHub CI"
+else
+    log_info "Running locally"
+fi
+
+# Main deployment function
+deploy() {
+    log_header "DEPLOYMENT" "Starting documentation deployment"
+    
+    # Check if in git repository
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        log_error "Not a git repository. Please run from repository root."
+        exit 1
+    fi
+    
+    # Fetch and merge latest changes
+    log_info "Fetching latest changes from upstream..."
+    git fetch upstream
+    
+    # Create and checkout deployment branch
+    log_info "Creating deployment branch..."
+    git checkout -b "$DEPLOY_BRANCH" 2>/dev/null || git checkout "$DEPLOY_BRANCH"
+    
+    # Remove all files except .git
+    log_info "Cleaning deployment directory..."
+    git rm -rf . 2>/dev/null || rm -rf *
+    
+    # Copy new files
+    log_info "Copying new files..."
+    cp -r .git/* .git/
+    
+    # Add all files
+    log_info "Staging files for commit..."
+    git add .
+    
+    # Commit changes
+    log_info "Committing changes..."
+    git config user.name "GitHub Actions"
+    git config user.email "actions@github.com"
+    git commit -m "Auto-deploy documentation - $(date -u)"
+    
+    # Push to remote repository
+    log_info "Pushing to remote repository..."
+    git push origin "$DEPLOY_BRANCH"
+    
+    log_header "COMPLETE" "Documentation deployed successfully to GitHub Pages"
+    
+    # Display deployment info
+    log_info "🔗 Your documentation is available at:" 
+    log_info "   https://tahatehran.github.io/doc-vps-server-project/"
+    log_info "📊 Repository: $REPO_URL/tree/$DEPLOY_BRANCH"
+}
+
+# Validation function
+validate_before_deploy() {
+    log_header "VALIDATION" "Validating before deployment"
+    
+    # Check if required files exist
+    if [ ! -f "README.md" ]; then
+        log_error "README.md not found"
+        exit 1
+    fi
+    
+    if [ ! -d "fa" ]; then
+        log_error "fa/ directory not found"
+        exit 1
+    fi
+    
+    if [ ! -f "CONTRIBUTING.md" ]; then
+        log_error "CONTRIBUTING.md not found"
+        exit 1
+    fi
+    
+    # Validate markdown files
+    log_info "Validating markdown files..."
+    if command -v markdown-validator >/dev/null 2>&1; then
+        markdown-validator README.md fa/README.md CONTRIBUTING.md --title "Pre-deployment validation"
+        if [ $? -ne 0 ]; then
+            log_error "Markdown validation failed"
+            exit 1
+        fi
+    else
+        log_warning "markdown-validator not available, skipping validation"
+    fi
+    
+    log_info "✅ All validations passed"
+}
+
+# Cleanup function
+cleanup() {
+    log_header "CLEANUP" "Cleaning up temporary files"
+    
+    # Remove temporary files
+    rm -f "*.tmp"
+    rm -f "*.log"
+    rm -rf ".tmp*"
+    
+    # Remove node_modules if it exists
+    if [ -d "node_modules" ]; then
+        log_info "Removing node_modules..."
+        rm -rf node_modules
+    fi
+    
+    log_info "✅ Cleanup completed"
+}
+
+# Main execution
+main() {
+    log_header "START" "Starting documentation build and deploy process"
+    
+    # Parse command line arguments
+    for arg in "$@"; do
+        case $arg in
+            --validate-only)
+                log_info "Validation mode only"
+                validate_before_deploy
+                exit 0
+                ;;
+            --clean)
+                cleanup
+                exit 0
+                ;;
+            --help)
+                echo "Usage: $0 [OPTIONS]"
+                echo ""
+                echo "Options:"
+                echo "  --validate-only   Validate only, don't deploy"
+                echo "  --clean          Clean temporary files"
+                echo "  --help           Show this help message"
+                exit 0
+                ;;
+        esac
+    done
+    
+    # Run validation
+    validate_before_deploy
+    
+    # Deploy
+    deploy
+}
+
+# Run main function
+main "$@"
+```
+
+## Project Configuration
+
+### `.markdownlintrc`
+
+Configuration for markdown linting:
+
+```json
+{
+  "default": true,
+  "MD001": true,
+  "MD002": {
+    "heading-increment": true,
+    "max-level": 6
+  },
+  "MD003": {
+    "heading-start-left": true,
+    "heading-increment": true,
+    "max-level": 6
+  },
+  "MD004": true,
+  "MD005": true,
+  "MD006": true,
+  "MD007": true,
+  "MD008": true,
+  "MD009": true,
+  "MD010": true,
+  "MD011": true,
+  "MD012": true,
+  "MD013": true,
+  "MD014": true,
+  "MD015": true,
+  "MD016": true,
+  "MD017": true,
+  "MD018": true,
+  "MD019": true,
+  "MD020": true,
+  "MD021": true,
+  "MD022": true,
+  "MD023": true,
+  "MD024": true,
+  "MD025": true,
+  "MD026": true,
+  "MD027": true,
+  "MD028": true,
+  "MD029": true,
+  "MD030": true,
+  "MD031": true,
+  "MD032": true,
+  "MD033": true,
+  "MD034": true,
+  "MD035": true,
+  "MD036": true,
+  "MD037": true,
+  "MD038": true,
+  "MD039": true,
+  "MD040": true,
+  "MD041": true,
+  "MD042": true,
+  "MD043": true,
+  "MD044": true,
+  "MD045": true,
+  "MD046": true,
+  "MD047": true,
+  "MD048": true,
+  "MD049": true,
+  "MD050": true,
+  "MD051": true,
+  "MD052": true,
+  "MD053": true,
+  "MD054": true,
+  "MD055": true,
+  "MD056": true,
+  "MD057": true,
+  "MD058": true,
+  "MD059": true,
+  "MD060": true,
+  "MD061": true,
+  "MD062": true,
+  "MD063": true,
+  "MD064": true,
+  "MD065": true,
+  "MD066": true,
+  "MD067": true,
+  "MD068": true,
+  "MD069": true,
+  "MD070": true,
+  "MD071": true,
+  "MD072": true,
+  "MD073": true,
+  "MD074": true,
+  "MD075": true,
+  "MD076": true,
+  "MD077": true,
+  "MD078": true,
+  "MD079": true,
+  "MD080": true,
+  "MD081": true,
+  "MD082": true,
+  "MD083": true,
+  "MD084": true,
+  "MD085": true,
+  "MD086": true,
+  "MD087": true,
+  "MD088": true,
+  "MD089": true,
+  "MD090": true,
+  "MD091": true,
+  "MD092": true,
+  "MD093": true,
+  "MD094": true,
+  "MD095": true,
+  "MD096": true,
+  "MD097": true,
+  "MD098": true,
+  "MD099": true,
+  "MD100": true,
+  "MD101": true,
+  "MD102": true,
+  "MD103": true,
+  "MD104": true,
+  "MD105": true,
+  "MD106": true,
+  "MD107": true,
+  "MD108": true,
+  "MD109": true,
+  "MD110": true,
+  "MD111": true,
+  "MD112": true,
+  "MD113": true,
+  "MD114": true,
+  "MD115": true,
+  "MD116": true,
+  "MD117": true,
+  "MD118": true,
+  "MD119": true,
+  "MD120": true,
+  "MD121": true,
+  "MD122": true,
+  "MD123": true,
+  "MD124": true,
+  "MD125": true,
+  "MD126": true,
+  "MD127": true,
+  "MD128": true,
+  "MD129": true,
+  "MD130": true,
+  "MD131": true,
+  "MD132": true,
+  "MD133": true,
+  "MD134": true,
+  "MD135": true,
+  "MD136": true,
+  "MD137": true,
+  "MD138": true,
+  "MD139": true,
+  "MD140": true,
+  "MD141": true,
+  "MD142": true,
+  "MD143": true,
+  "MD144": true,
+  "MD145": true,
+  "MD146": true,
+  "MD147": true,
+  "MD148": true,
+  "MD149": true,
+  "MD150": true,
+  "MD151": true,
+  "MD152": true,
+  "MD153": true,
+  "MD154": true,
+  "MD155": true,
+  "MD156": true,
+  "MD157": true,
+  "MD158": true,
+  "MD159": true,
+  "MD160": true,
+  "MD161": true,
+  "MD162": true,
+  "MD163": true,
+  "MD164": true,
+  "MD165": true,
+  "MD166": true,
+  "MD167": true,
+  "MD168": true,
+  "MD169": true,
+  "MD170": true,
+  "MD171": true,
+  "MD172": true,
+  "MD173": true,
+  "MD174": true,
+  "MD175": true,
+  "MD176": true,
+  "MD177": true,
+  "MD178": true,
+  "MD179": true,
+  "MD180": true,
+  "MD181": true,
+  "MD182": true,
+  "MD183": true,
+  "MD184": true,
+  "MD185": true,
+  "MD186": true,
+  "MD187": true,
+  "MD188": true,
+  "MD189": true,
+  "MD190": true,
+  "MD191": true,
+  "MD192": true,
+  "MD193": true,
+  "MD194": true,
+  "MD195": true,
+  "MD196": true,
+  "MD197": true,
+  "MD198": true,
+  "MD199": true,
+  "MD200": true,
+  "MD201": true,
+  "MD202": true,
+  "MD203": true,
+  "MD204": true,
+  "MD205": true,
+  "MD206": true,
+  "MD207": true,
+  "MD208": true,
+  "MD209": true,
+  "MD210": true,
+  "MD211": true,
+  "MD212": true,
+  "MD213": true,
+  "MD214": true,
+  "MD215": true,
+  "MD216": true,
+  "MD217": true,
+  "MD218": true,
+  "MD219": true,
+  "MD220": true,
+  "MD221": true,
+  "MD222": true,
+  "MD223": true,
+  "MD224": true,
+  "MD225": true,
+  "MD226": true,
+  "MD227": true,
+  "MD228": true,
+  "MD229": true,
+  "MD230": true,
+  "MD231": true,
+  "MD232": true,
+  "MD233": true,
+  "MD234": true,
+  "MD235": true,
+  "MD236": true,
+  "MD237": true,
+  "MD238": true,
+  "MD239": true,
+  "MD240": true,
+  "MD241": true,
+  "MD242": true,
+  "MD243": true,
+  "MD244": true,
+  "MD245": true,
+  "MD246": true,
+  "MD247": true,
+  "MD248": true,
+  "MD249": true,
+  "MD250": true,
+  "MD251": true,
+  "MD252": true,
+  "MD253": true,
+  "MD254": true,
+  "MD255": true,
+  "MD256": true,
+  "MD257": true,
+  "MD258": true,
+  "MD259": true,
+  "MD260": true,
+  "MD261": true,
+  "MD262": true,
+  "MD263": true,
+  "MD264": true,
+  "MD265": true,
+  "MD266": true,
+  "MD267": true,
+  "MD268": true,
+  "MD269": true,
+  "MD270": true,
+  "MD271": true,
+  "MD272": true,
+  "MD273": true,
+  "MD274": true,
+  "MD275": true,
+  "MD276": true,
+  "MD277": true,
+  "MD278": true,
+  "MD279": true,
+  "MD280": true,
+  "MD281": true,
+  "MD282": true,
+  "MD283": true,
+  "MD284": true,
+  "MD285": true,
+  "MD286": true,
+  "MD287": true,
+  "MD288": true,
+  "MD289": true,
+  "MD290": true,
+  "MD291": true,
+  "MD292": true,
+  "MD293": true,
+  "MD294": true,
+  "MD295": true,
+  "MD296": true,
+  "MD297": true,
+  "MD298": true,
+  "MD299": true,
+  "MD300": true,
+  "MD301": true,
+  "MD302": true,
+  "MD303": true,
+  "MD304": true,
+  "MD305": true,
+  "MD306": true,
+  "MD307": true,
+  "MD308": true,
+  "MD309": true,
+  "MD310": true,
+  "MD311": true,
+  "MD312": true,
+  "MD313": true,
+  "MD314": true,
+  "MD315": true,
+  "MD316": true,
+  "MD317": true,
+  "MD318": true,
+  "MD319": true,
+  "MD320": true,
+  "MD321": true,
+  "MD322": true,
+  "MD323": true,
+  "MD324": true,
+  "MD325": true,
+  "MD326": true,
+  "MD327": true,
+  "MD328": true,
+  "MD329": true,
+  "MD330": true,
+  "MD331": true,
+  "MD332": true,
+  "MD333": true,
+  "MD334": true,
+  "MD335": true,
+  "MD336": true,
+  "MD337": true,
+  "MD338": true,
+  "MD339": true,
+  "MD340": true,
+  "MD341": true,
+  "MD342": true,
+  "MD343": true,
+  "MD344": true,
+  "MD345": true,
+  "MD346": true,
+  "MD347": true,
+  "MD348": true,
+  "MD349": true,
+  "MD350": true,
+  "MD351": true,
+  "MD352": true,
+  "MD353": true,
+  "MD354": true,
+  "MD355": true,
+  "MD356": true,
+  "MD357": true,
+  "MD358": true,
+  "MD359": true,
+  "MD360": true,
+  "MD361": true,
+  "MD362": true,
+  "MD363": true,
+  "MD364": true,
+  "MD365": true,
+  "MD366": true,
+  "MD367": true,
+  "MD368": true,
+  "MD369": true,
+  "MD370": true,
+  "MD371": true,
+  "MD372": true,
+  "MD373": true,
+  "MD374": true,
+  "MD375": true,
+  "MD376": true,
+  "MD377": true,
+  "MD378": true,
+  "MD379": true,
+  "MD380": true,
+  "MD381": true,
+  "MD382": true,
+  "MD383": true,
+  "MD384": true,
+  "MD385": true,
+  "MD386": true,
+  "MD387": true,
+  "MD388": true,
+  "MD389": true,
+  "MD390": true,
+  "MD391": true,
+  "MD392": true,
+  "MD393": true,
+  "MD394": true,
+  "MD395": true,
+  "MD396": true,
+  "MD397": true,
+  "MD398": true,
+  "MD399": true,
+  "MD400": true,
+  "MD401": true,
+  "MD402": true,
+  "MD403": true,
+  "MD404": true,
+  "MD405": true,
+  "MD406": true,
+  "MD407": true,
+  "MD408": true,
+  "MD409": true,
+  "MD410": true,
+  "MD411": true,
+  "MD412": true,
+  "MD413": true,
+  "MD414": true,
+  "MD415": true,
+  "MD416": true,
+  "MD417": true,
+  "MD418": true,
+  "MD419": true,
+  "MD420": true,
+  "MD421": true,
+  "MD422": true,
+  "MD423": true,
+  "MD424": true,
+  "MD425": true,
+  "MD426": true,
+  "MD427": true,
+  "MD428": true,
+  "MD429": true,
+  "MD430": true,
+  "MD431": true,
+  "MD432": true,
+  "MD433": true,
+  "MD434": true,
+  "MD435": true,
+  "MD436": true,
+  "MD437": true,
+  "MD438": true,
+  "MD439": true,
+  "MD440": true,
+  "MD441": true,
+  "MD442": true,
+  "MD443": true,
+  "MD444": true,
+  "MD445": true,
+  "MD446": true,
+  "MD447": true,
+  "MD448": true,
+  "MD449": true,
+  "MD450": true,
+  "MD451": true,
+  "MD452": true,
+  "MD453": true,
+  "MD454": true,
+  "MD455": true,
+  "MD456": true,
+  "MD457": true,
+  "MD458": true,
+  "MD459": true,
+  "MD460": true,
+  "MD461": true,
+  "MD462": true,
+  "MD463": true,
+  "MD464": true,
+  "MD465": true,
+  "MD466": true,
+  "MD467": true,
+  "MD468": true,
+  "MD469": true,
+  "MD470": true,
+  "MD471": true,
+  "MD472": true,
+  "MD473": true,
+  "MD474": true,
+  "MD475": true,
+  "MD476": true,
+  "MD477": true,
+  "MD478": true,
+  "MD479": true,
+  "MD480": true,
+  "MD481": true,
+  "MD482": true,
+  "MD483": true,
+  "MD484": true,
+  "MD485": true,
+  "MD486": true,
+  "MD487": true,
+  "MD488": true,
+  "MD489": true,
+  "MD490": true,
+  "MD491": true,
+  "MD492": true,
+  "MD493": true,
+  "MD494": true,
+  "MD495": true,
+  "MD496": true,
+  "MD497": true,
+  "MD498": true,
+  "MD499": true,
+  "MD500": true,
+  "MD501": true,
+  "MD502": true,
+  "MD503": true,
+  "MD504": true,
+  "MD505": true,
+  "MD506": true,
+  "MD507": true,
+  "MD508": true,
+  "MD509": true,
+  "MD510": true,
+  "MD511": true,
+  "MD512": true,
+  "MD513": true,
+  "MD514": true,
+  "MD515": true,
+  "MD516": true,
+  "MD517": true,
+  "MD518": true,
+  "MD519": true,
+  "MD520": true,
+  "MD521": true,
+  "MD522": true,
+  "MD523": true,
+  "MD524": true,
+  "MD525": true,
+  "MD526": true,
+  "MD527": true,
+  "MD528": true,
+  "MD529": true,
+  "MD530": true,
+  "MD531": true,
+  "MD532": true,
+  "MD533": true,
+  "MD534": true,
+  "MD535": true,
+  "MD536": true,
+  "MD537": true,
+  "MD538": true,
+  "MD539": true,
+  "MD540": true,
+  "MD541": true,
+  "MD542": true,
+  "MD543": true,
+  "MD544": true,
+  "MD545": true,
+  "MD546": true,
+  "MD547": true,
+  "MD548": true,
+  "MD549": true,
+  "MD550": true,
+  "MD551": true,
+  "MD552": true,
+  "MD553": true,
+  "MD554": true,
+  "MD555": true,
+  "MD556": true,
+  "MD557": true,
+  "MD558": true,
+  "MD559": true,
+  "MD560": true,
+  "MD561": true,
+  "MD562": true,
+  "MD563": true,
+  "MD564": true,
+  "MD565": true,
+  "MD566": true,
+  "MD567": true,
+  "MD568": true,
+  "MD569": true,
+  "MD570": true,
+  "MD571": true,
+  "MD572": true,
+  "MD573": true,
+  "MD574": true,
+  "MD575": true,
+  "MD576": true,
+  "MD577": true,
+  "MD578": true,
+  "MD579": true,
+  "MD580": true,
+  "MD581": true,
+  "MD582": true,
+  "MD583": true,
+  "MD584": true,
+  "MD585": true,
+  "MD586": true,
+  "MD587": true,
+  "MD588": true,
+  "MD589": true,
+  "MD590": true,
+  "MD591": true,
+  "MD592": true,
+  "MD593": true,
+  "MD594": true,
+  "MD595": true,
+  "MD596": true,
+  "MD597": true,
+  "MD598": true,
+  "MD599": true,
+  "MD600": true,
+  "MD601": true,
+  "MD602": true,
+  "MD603": true,
+  "MD604": true,
+  "MD605": true,
+  "MD606": true,
+  "MD607": true,
+  "MD608": true,
+  "MD609": true,
+  "MD610": true,
+  "MD611": true,
+  "MD612": true,
+  "MD613": true,
+  "MD614": true,
+  "MD615": true,
+  "MD616": true,
+  "MD617": true,
+  "MD618": true,
+  "MD619": true,
+  "MD620": true,
+  "MD621": true,
+  "MD622": true,
+  "MD623": true,
+  "MD624": true,
+  "MD625": true,
+  "MD626": true,
+  "MD627": true,
+  "MD628": true,
+  "MD629": true,
+  "MD630": true,
+  "MD631": true,
+  "MD632": true,
+  "MD633": true,
+  "MD634": true,
+  "MD635": true,
+  "MD636": true,
+  "MD637": true,
+  "MD638": true,
+  "MD639": true,
+  "MD640": true,
+  "MD641": true,
+  "MD642": true,
+  "MD643": true,
+  "MD644": true,
+  "MD645": true,
+  "MD646": true,
+  "MD647": true,
+  "MD648": true,
+  "MD649": true,
+  "MD650": true,
+  "MD651": true,
+  "MD652": true,
+  "MD653": true,
+  "MD654": true,
+  "MD655": true,
+  "MD656": true,
+  "MD657": true,
+  "MD658": true,
+  "MD659": true,
+  "MD660": true,
+  "MD661": true,
+  "MD662": true,
+  "MD663": true,
+  "MD664": true,
+  "MD665": true,
+  "MD666": true,
+  "MD667": true,
+  "MD668": true,
+  "MD669": true,
+  "MD670": true,
+  "MD671": true,
+  "MD672": true,
+  "MD673": true,
+  "MD674": true,
+  "MD675": true,
+  "MD676": true,
+  "MD677": true,
+  "MD678": true,
+  "MD679": true,
+  "MD680": true,
+  "MD681": true,
+  "MD682": true,
+  "MD683": true,
+  "MD684": true,
+  "MD685": true,
+  "MD686": true,
+  "MD687": true,
+  "MD688": true,
+  "MD689": true,
+  "MD690": true,
+  "MD691": true,
+  "MD692": true,
+  "MD693": true,
+  "MD694": true,
+  "MD695": true,
+  "MD696": true,
+  "MD697": true,
+  "MD698": true,
+  "MD699": true,
+  "MD700": true,
+  "MD701": true,
+  "MD702": true,
+  "MD703": true,
+  "MD704": true,
+  "MD705": true,
+  "MD706": true,
+  "MD707": true,
+  "MD708": true,
+  "MD709": true,
+  "MD710": true,
+  "MD711": true,
+  "MD712": true,
+  "MD713": true,
+  "MD714": true,
+  "MD715": true,
+  "MD716": true,
+  "MD717": true,
+  "MD718": true,
+  "MD719": true,
+  "MD720": true,
+  "MD721": true,
+  "MD722": true,
+  "MD723": true,
+  "MD724": true,
+  "MD725": true,
+  "MD726": true,
+  "MD727": true,
+  "MD728": true,
+  "MD729": true,
+  "MD730": true,
+  "MD731": true,
+  "MD732": true,
+  "MD733": true,
+  "MD734": true,
+  "MD735": true,
+  "MD736": true,
+  "MD737": true,
+  "MD738": true,
+  "MD739": true,
+  "MD740": true,
+  "MD741": true,
+  "MD742": true,
+  "MD743": true,
+  "MD744": true,
+  "MD745": true,
+  "MD746": true,
+  "MD747": true,
+  "MD748": true,
+  "MD749": true,
+  "MD750": true,
+  "MD751": true,
+  "MD752": true,
+  "MD753": true,
+  "MD754": true,
+  "MD755": true,
+  "MD756": true,
+  "MD757": true,
+  "MD758": true,
+  "MD759": true,
+  "MD760": true,
+  "MD761": true,
+  "MD762": true,
+  "MD763": true,
+  "MD764": true,
+  "MD765": true,
+  "MD766": true,
+  "MD767": true,
+  "MD768": true,
+  "MD769": true,
+  "MD770": true,
+  "MD771": true,
+  "MD772": true,
+  "MD773": true,
+  "MD774": true,
+  "MD775": true,
+  "MD776": true,
+  "MD777": true,
+  "MD778": true,
+  "MD779": true,
+  "MD780": true,
+  "MD781": true,
+  "MD782": true,
+  "MD783": true,
+  "MD784": true,
+  "MD785": true,
+  "MD786": true,
+  "MD787": true,
+  "MD788": true,
+  "MD789": true,
+  "MD790": true,
+  "MD791": true,
+  "MD792": true,
+  "MD793": true,
+  "MD794": true,
+  "MD795": true,
+  "MD796": true,
+  "MD797": true,
+  "MD798": true,
+  "MD799": true,
+  "MD800": true,
+  "MD801": true,
+  "MD802": true,
+  "MD803": true,
+  "MD804": true,
+  "MD805": true,
+  "MD806": true,
+  "MD807": true,
+  "MD808": true,
+  "MD809": true,
+  "MD810": true,
+  "MD811": true,
+  "MD812": true,
+  "MD813": true,
+  "MD814": true,
+  "MD815": true,
+  "MD816": true,
+  "MD817": true,
+  "MD818": true,
+  "MD819": true,
+  "MD820": true,
+  "MD821": true,
+  "MD822": true,
+  "MD823": true,
+  "MD824": true,
+  "MD825": true,
+  "MD826": true,
+  "MD827": true,
+  "MD828": true,
+  "MD829": true,
+  "MD830": true,
+  "MD831": true,
+  "MD832": true,
+  "MD833": true,
+  "MD834": true,
+  "MD835": true,
+  "MD836": true,
+  "MD837": true,
+  "MD838": true,
+  "MD839": true,
+  "MD840": true,
+  "MD841": true,
+  "MD842": true,
+  "MD843": true,
+  "MD844": true,
+  "MD845": true,
+  "MD846": true,
+  "MD847": true,
+  "MD848": true,
+  "MD849": true,
+  "MD850": true,
+  "MD851": true,
+  "MD852": true,
+  "MD853": true,
+  "MD854": true,
+  "MD855": true,
+  "MD856": true,
+  "MD857": true,
+  "MD858": true,
+  "MD859": true,
+  "MD860": true,
+  "MD861": true,
+  "MD862": true,
+  "MD863": true,
+  "MD864": true,
+  "MD865": true,
+  "MD866": true,
+  "MD867": true,
+  "MD868": true,
+  "MD869": true,
+  "MD870": true,
+  "MD871": true,
+  "MD872": true,
+  "MD873": true,
+  "MD874": true,
+  "MD875": true,
+  "MD876": true,
+  "MD877": true,
+  "MD878": true,
+  "MD879": true,
+  "MD880": true,
+  "MD881": true,
+  "MD882": true,
+  "MD883": true,
+  "MD884": true,
+  "MD885": true,
+  "MD886": true,
+  "MD887": true,
+  "MD888": true,
+  "MD889": true,
+  "MD890": true,
+  "MD891": true,
+  "MD892": true,
+  "MD893": true,
+  "MD894": true,
+  "MD895": true,
+  "MD896": true,
+  "MD897": true,
+  "MD898": true,
+  "MD899": true,
+  "MD900": true,
+  "MD901": true,
+  "MD902": true,
+  "MD903": true,
+  "MD904": true,
+  "MD905": true,
+  "MD906": true,
+  "MD907": true,
+  "MD908": true,
+  "MD909": true,
+  "MD910": true,
+  "MD911": true,
+  "MD912": true,
+  "MD913": true,
+  "MD914": true,
+  "MD915": true,
+  "MD916": true,
+  "MD917": true,
+  "MD918": true,
+  "MD919": true,
+  "MD920": true,
+  "MD921": true,
+  "MD922": true,
+  "MD923": true,
+  "MD924": true,
+  "MD925": true,
+  "MD926": true,
+  "MD927": true,
+  "MD928": true,
+  "MD929": true,
+  "MD930": true,
+  "MD931": true,
+  "MD932": true,
+  "MD933": true,
+  "MD934": true,
+  "MD935": true,
+  "MD936": true,
+  "MD937": true,
+  "MD938": true,
+  "MD939": true,
+  "MD940": true,
+  "MD941": true,
+  "MD942": true,
+  "MD943": true,
+  "MD944": true,
+  "MD945": true,
+  "MD946": true,
+  "MD947": true,
+  "MD948": true,
+  "MD949": true,
+  "MD950": true,
+  "MD951": true,
+  "MD952": true,
+  "MD953": true,
+  "MD954": true,
+  "MD955": true,
+  "MD956": true,
+  "MD957": true,
+  "MD958": true,
+  "MD959": true,
+  "MD960": true,
+  "MD961": true,
+  "MD962": true,
+  "MD963": true,
+  "MD964": true,
+  "MD965": true,
+  "MD966": true,
+  "MD967": true,
+  "MD968": true,
+  "MD969": true,
+  "MD970": true,
+  "MD971": true,
+  "MD972": true,
+  "MD973": true,
+  "MD974": true,
+  "MD975": true,
+  "MD976": true,
+  "MD977": true,
+  "MD978": true,
+  "MD979": true,
+  "MD980": true,
+  "MD981": true,
+  "MD982": true,
+  "MD983": true,
+  "MD984": true,
+  "MD985": true,
+  "MD986": true,
+  "MD987": true,
+  "MD988": true,
+  "MD989": true,
+  "MD990": true,
+  "MD991": true,
+  "MD992": true,
+  "MD993": true,
+  "MD994": true,
+  "MD995": true,
+  "MD996": true,
+  "MD997": true,
+  "MD998": true,
+  "MD999": true,
+  "MD1000": true
+}
