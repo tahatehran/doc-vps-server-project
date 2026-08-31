@@ -17,8 +17,7 @@ This repository contains comprehensive documentation for **Bore**, a modern, sim
 | Detail | Value |
 |--------|-------|
 | **Server IP** | `2.144.21.218` |
-| **Port** | `7835` |
-| **Protocol** | TCP |
+| **Protocol** | TCP Tunnel |
 | **Authentication** | Secret-based |
 | **Status** | 🔴 Offline (currently disabled) |
 

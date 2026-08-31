@@ -1,279 +1,151 @@
-# Bore Secure Server Documentation - Documentation Updates
+# مستندات سرور امن بور
 
-## 🎯 Overview
+> **🌐 زبان:** [English](en/README.md) | [فارسی](fa/README.md)
 
-This branch contains documentation updates and improvements for the Bore Secure Server Documentation project. This branch is separate from the main repository to allow for testing and development of documentation enhancements without affecting the stable release.
+---
 
-### Key Improvements
-- 📝 Enhanced documentation structure
-- 🔧 Updated installation procedures
-- 🛡️ Improved security guidelines
-- 🌐 Additional language support
-- 📊 Comprehensive validation tools
-- 🎨 Professional formatting improvements
+## 📋 نمای کلی
 
-## 📋 Branch Status
+این مخزن مستندات جامع برای **Bore** را شامل می‌شود، یک تونل TCP مدرن و ساده در Rust که پورت‌های محلی را به یک سرور راه دور متصل می‌کند و از فایروال‌های استاندارد NAT عبور می‌کند.
 
-**Current Branch:** `feature/documentation-updates`
+**🔐 امن. ⚡ سریع. 🔧 انعطاف‌پذیر.**
 
-**Base Branch:** `main`
+---
 
-**Divergence:** Local and remote branches have diverged (1 commit difference)
+## 🖥️ اطلاعات سرور
 
-**Repository Location:** `/opt/data/doc-vps-server-project`
+| جزئیات | مقدار |
+|--------|-------|
+| **آی پی سرور** | `2.144.21.218` |
+| **پورت** | `7835` |
+| **پروتکل** | TCP |
+| **احراز هویت** | مبتنی بر رمز |
+| **وضعیت** | 🔴 آفلاین (در حال حاضر غیرفعال) |
 
-## 🔄 Update History
+---
 
-### Recent Commits
-- **8cb265e**: Complete Bore secure server documentation (Current HEAD)
-- **b7d5d40**: Complete Bore secure server documentation (Previous HEAD)
-
-### Next Steps
-1. **Integrate changes** from main branch
-2. **Update documentation** based on user feedback
-3. **Add new examples** and code snippets
-4. **Improve validation** and quality checks
-5. **Enhance user experience** with better formatting
-
-## 📂 Repository Structure
-
-This branch maintains the same core structure:
+## 📁 ساختار مخزن
 
 ```
 doc-vps-server-project/
-├── 📄 CONTRIBUTING.md
-├── 📄 en/README.md
-├── 📄 fa/README.md
-├── 📄 validate-docs.sh
-├── 📄 .markdownlintrc
-├── 📁 examples/
-└── 📁 scripts/
+├── 📄 README.md                    # این فایل - نمای کلی
+├── 📄 CONTRIBUTING.md              # راهنمای مشارکت
+├── 📄 LICENSE.md                   # لایسنس MIT
+│
+├── 📁 en/                          # مستندات انگلیسی
+│   ├── 📄 README.md                # نمای کلی انگلیسی
+│   ├── 📄 server.md                # راه‌اندازی و دستورات سرور
+│   ├── 📄 client-developer.md      # راهنمای کلاینت برای توسعه‌دهندگان
+│   └── 📄 client-user.md           # راهنمای کلاینت برای کاربران عادی
+│
+├── 📁 fa/                          # مستندات فارسی
+│   ├── 📄 README.md                # نمای کلی فارسی
+│   ├── 📄 server.md                # راهنمای سرور
+│   ├── 📄 client-developer.md      # راهنمای کلاینت برای توسعه‌دهندگان
+│   └── 📄 client-user.md           # راهنمای کلاینت برای کاربران عادی
+│
+├── 📁 examples/                    # نمونه کدها
+└── 📁 scripts/                     # اسکریپت‌های کمکی
 ```
 
-## 🚀 Development Goals
+---
 
-### Documentation Enhancements
-- [ ] Add more comprehensive installation guides
-- [ ] Include troubleshooting sections for common issues
-- [ ] Add advanced configuration examples
-- [ ] Include API documentation
-- [ ] Add security best practices guide
-- [ ] Include performance optimization tips
+## 📚 بخش‌های مستندات
 
-### Quality Improvements
-- [ ] Enhance validation scripts
-- [ ] Add automated testing
-- [ ] Improve code example quality
-- [ ] Add documentation standards
-- [ ] Include user feedback integration
+### ۱. 🖥️ مستندات سرور
+راهنمای کامل برای راه‌اندازی و مدیریت سرور Bore.
 
-### User Experience
-- [ ] Improve navigation structure
-- [ ] Add search functionality
-- [ ] Include mobile-friendly formatting
-- [ ] Add interactive examples
-- [ ] Include downloadable resources
+| زبان | لینک |
+|----------|------|
+| English | [en/server.md](en/server.md) |
+| فارسی | [fa/server.md](fa/server.md) |
 
-## 🔧 Technical Specifications
-
-### Branch Management
-- **Default Branch**: main
-- **Development Branch**: feature/documentation-updates
-- **Feature Branches**: Individual branches for specific updates
-- **Hotfix Branches**: Urgent bug fixes and security updates
-
-### Version Control
-- **Git Flow**: Feature-BRANCH-NAME development model
-- **Code Review**: PR approval process
-- **Testing**: Automated validation scripts
-- **Deployment**: Staged deployment pipeline
-
-## 📈 Success Metrics
-
-### Documentation Quality
-- ✅ Comprehensive coverage (51,291+ words)
-- ✅ Bilingual support (English + Persian)
-- ✅ Professional formatting standards
-- ✅ Code example quality
-- ✅ User feedback integration
-
-### Technical Standards
-- ✅ Git repository proper configuration
-- ✅ Validation tools in place
-- ✅ Quality assurance processes
-- ✅ Security compliance
-- ✅ Performance optimization
-
-## 🎯 Branch Purpose
-
-This branch serves as:
-1. **Development Environment**: Safe space for testing documentation changes
-2. **Integration Testing**: Validate new content before main deployment
-3. **Feature Development**: Add new documentation sections
-4. **Bug Fixes**: Address documentation issues
-5. **User Feedback**: Incorporate user suggestions and improvements
-
-## 🔄 Integration Plan
-
-### Merge Strategy
-1. **Feature Completion**: Develop complete documentation updates
-2. **Code Review**: Peer review and quality assurance
-3. **Testing**: Automated validation and user testing
-4. **Staging**: Integration into staging environment
-5. **Production**: Final deployment to main branch
-
-### Quality Gates
-- ✅ Documentation completeness check
-- ✅ Code example validation
-- ✅ Accessibility compliance
-- ✅ User experience testing
-- ✅ Performance optimization
-
-## 📋 Branch Guidelines
-
-### Contribution Process
-1. **Fork the repository**
-2. **Create feature branch**
-3. **Develop and test**
-4. **Submit pull request**
-5. **Code review and approval**
-6. **Merge to main branch**
-
-### Development Standards
-- Follow existing code style
-- Maintain documentation quality
-- Adhere to contribution guidelines
-- Ensure accessibility compliance
-- Follow security best practices
-
-## 🚀 Next Steps
-
-### Immediate Actions
-1. **Integrate changes** from main branch
-2. **Update documentation** with new content
-3. **Add validation** for new sections
-4. **Test improvements** with validation scripts
-5. **Prepare for merge** to main branch
-
-### Future Plans
-1. **Add more examples** and tutorials
-2. **Include advanced topics**
-3. **Enhance user experience**
-4. **Add community resources**
-5. **Expand language support**
-
-## 💡 Branch Philosophy
-
-This branch represents a **safe development environment** where:
-- Documentation can be improved without affecting stable releases
-- New content can be tested before public deployment
-- User feedback can be incorporated before final release
-- Quality standards can be maintained throughout development
-
-## 📊 Branch Summary
-
-| Aspect | Status | Details |
-|--------|--------|---------|
-| **Branch Name** | ✅ `feature/documentation-updates` | Development branch |
-| **Base Branch** | ✅ `main` | Stable release branch |
-| **Content** | ✅ Complete | 51,291+ words |
-| **Languages** | ✅ Bilingual | English + Persian |
-| **Development** | ✅ Active | Ready for updates |
-| **Integration** | ✅ Planned | Merge to main |
-
-## 🎯 Conclusion
-
-The `feature/documentation-updates` branch provides a dedicated environment for enhancing the Bore Secure Server Documentation while maintaining the stability of the main release. This branch allows for:
-
-- **Safe development** of new documentation features
-- **Quality testing** before public deployment
-- **User feedback integration** during development
-- **Professional standards** maintenance throughout the process
-
-**The repository is ready for comprehensive documentation updates and improvements!** 🎉
+**موضوعات پوشش داده شده:**
+- نصب سرور
+- پیکربندی سرویس (systemd)
+- تنظیمات امنیتی
+- دستورات مدیریتی
+- عیب‌یابی
 
 ---
 
-*Branch created: August 31, 2026*
-*Created by: openhands*
-*Status: READY FOR DEVELOPMENT*
+### ۲. 👨‍💻 مستندات کلاینت (توسعه‌دهنده)
+برای توسعه‌دهندگانی که می‌خواهند کلاینت Bore را در برنامه‌های خود ادغام کنند.
+
+| زبان | لینک |
+|----------|------|
+| English | [en/client-developer.md](en/client-developer.md) |
+| فارسی | [fa/client-developer.md](fa/client-developer.md) |
+
+**موضوعات پوشش داده شده:**
+- استفاده از API
+- ادغام برنامه‌نویسی
+- پیکربندی پیشرفته
+- مثال‌های اسکریپت
+- بهترین روش‌ها
 
 ---
 
-## 🚀 Branch Development Progress
+### ۳. 👤 مستندات کلاینت (کاربر)
+برای کاربران عادی که می‌خواهند به سرور Bore متصل شوند.
 
-### ✅ COMPLETED TASKS
-- ✅ Created branch `feature/documentation-updates`
-- ✅ Maintained all existing documentation content
-- ✅ Preserved Git history and commit information
-- ✅ Established development environment
+| زبان | لینک |
+|----------|------|
+| English | [en/client-user.md](en/client-user.md) |
+| فارسی | [fa/client-user.md](fa/client-user.md) |
 
-### 🔄 CURRENTLY WORKING ON
-- [ ] Merge changes from main branch
-- [ ] Update documentation with enhancements
-- [ ] Add new examples and tutorials
-- [ ] Improve validation scripts
-- [ ] Test and quality assurance
-- [ ] Prepare for merge to main
-
-### 📋 NEXT STEPS
-1. **Integrate main branch changes**
-2. **Enhance documentation content**
-3. **Add comprehensive examples**
-4. **Improve user experience**
-5. **Quality validation and testing**
-6. **Merge to main branch**
+**موضوعات پوشش داده شده:**
+- راهنمای اتصال سریع
+- دستورات پایه
+- کاربردهای رایج
+- عیب‌یابی
 
 ---
 
-**This branch provides a safe development environment for improving the Bore Secure Server Documentation while maintaining the stability of the main release. Ready for comprehensive documentation updates!** 🎯✨
+## 🚀 شروع سریع
+
+### اتصال به سرور (کلاینت)
+
+```bash
+# اتصال پایه
+bore local 8080 --to 2.144.21.218:7835 --secret "رمز_شما"
+
+# مثال: فوروارد کردن پورت محلی 3000 به راه دور
+bore local 3000 --to 2.144.21.218:7835 --secret "رمز_شما"
+```
+
+> ⚠️ **توجه:** سرور در حال حاضر آفلاین است. برای دسترسی با مدیر سرور تماس بگیرید.
 
 ---
 
-## 🔍 Repository Status Check
+## 📜 لایسنس
 
-**Current State:**
-- ✅ Branch created successfully
-- ✅ All files maintained
-- ✅ Git history preserved
-- ✅ Ready for documentation development
-
-**Ready for:** Documentation enhancements, updates, and improvements
-
-**Next Phase:** Documentation content development and updates
+این پروژه تحت **لایسنس MIT** منتشر شده است - برای جزئیات به [LICENSE.md](LICENSE.md) مراجعه کنید.
 
 ---
 
-**The repository is now ready for comprehensive documentation updates!** 📚🚀
+## 🤝 مشارکت
+
+ما از مشارکت‌ها استقبال می‌کنیم! لطفاً [CONTRIBUTING.md](CONTRIBUTING.md) را برای راهنما بخوانید.
 
 ---
 
-## 🎯 Branch Purpose Summary
+## 📞 تماس
 
-This branch (`feature/documentation-updates`) serves as the development environment for enhancing the Bore Secure Server Documentation project. It provides:
-
-1. **Safe Development Space**: Test updates without affecting stable releases
-2. **Feature Integration**: Add new documentation content and improvements
-3. **Quality Assurance**: Validate all changes before deployment
-4. **User Experience**: Enhance documentation based on feedback
-5. **Professional Standards**: Maintain high-quality documentation standards
-
-**Ready for comprehensive documentation development and updates!** 🌟📖
+- **مدیر سرور:** Taha Tehrani Nasab
+- **گیت‌هاب:** [@tahatehran](https://github.com/tahatehran)
 
 ---
 
-## 🚀 Branch Actions Ready
-
-**Can now perform:**
-- ✅ Documentation content updates
-- ✅ Code example improvements
-- ✅ Validation script enhancements
-- ✅ User experience improvements
-- ✅ Quality standards enforcement
-- ✅ Content organization and structure
-
-**Next steps:** Begin documenting enhancement development and testing
+<p align="center">
+  <strong>🌐 زبان خود را انتخاب کنید تا شروع کنید:</strong>
+  <br><br>
+  <a href="en/README.md">English</a> | 
+  <a href="fa/README.md">فارسی</a>
+</p>
 
 ---
 
-**This branch is now live and ready for documentation development!** 🎯✨
+<p align="center">
+  <sub>ساخته شده با ❤️ برای جامعه Bore</sub>
+</p>
