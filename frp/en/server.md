@@ -2,7 +2,7 @@
 
 ## 🖥️ Server Overview
 
-This document provides complete documentation for setting up and managing an **FRP** secure tunnel server.
+This document provides complete documentation for setting up and managing an **FRP** secure tunnel server with client management, monitoring, and admin UI.
 
 | Detail | Value |
 |--------|-------|
@@ -10,6 +10,7 @@ This document provides complete documentation for setting up and managing an **F
 | **Protocol** | TCP + UDP |
 | **Authentication** | Token-based |
 | **Port Range** | `8000-9000` (configurable) |
+| **FRP Version** | v0.68.0 |
 
 ---
 
@@ -19,8 +20,12 @@ This document provides complete documentation for setting up and managing an **F
 2. [Configuration](#configuration)
 3. [Service Setup](#service-setup)
 4. [Management Commands](#management-commands)
-5. [Security](#security)
-6. [Troubleshooting](#troubleshooting)
+5. [Client Management](#client-management)
+6. [User Management](#user-management)
+7. [Monitoring Dashboard](#monitoring-dashboard)
+8. [Client Admin UI](#client-admin-ui)
+9. [Security](#security)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -141,7 +146,7 @@ EOF
 ### Create Systemd Service
 
 ```bash
-sudo tee /etc/systemd/system/frp-server.service <<EOF
+sudo tee /etc/systemd/system/frps.service <<EOF
 [Unit]
 Description=FRP Server
 After=network.target
@@ -151,8 +156,8 @@ Wants=network.target
 Type=simple
 User=root
 ExecStart=/usr/local/bin/frps -c /etc/frp/frps.ini
-Restart=always
-RestartSec=10
+Restart=on-failure
+RestartSec=5
 StandardOutput=journal
 StandardError=journal
 LimitNOFILE=1048576
@@ -161,7 +166,7 @@ LimitNOFILE=1048576
 WantedBy=multi-user.target
 EOF
 
-sudo tee /etc/systemd/system/frp-client.service <<EOF
+sudo tee /etc/systemd/system/frpc.service <<EOF
 [Unit]
 Description=FRP Client
 After=network.target
@@ -189,64 +194,213 @@ EOF
 sudo systemctl daemon-reload
 
 # Enable services
-sudo systemctl enable frp-server
-sudo systemctl enable frp-client
+sudo systemctl enable frps.service
+sudo systemctl enable frpc.service
 
 # Start services
-sudo systemctl start frp-server
-sudo systemctl start frp-client
+sudo systemctl start frps.service
+sudo systemctl start frpc.service
 
 # Check status
-sudo systemctl status frp-server
-sudo systemctl status frp-client
+sudo systemctl status frps.service
+sudo systemctl status frpc.service
 ```
 
 ---
 
 ## ⚡ Management Commands
 
+### frpctl - Management Script
+
+The `frpctl` script provides a complete management interface:
+
+```bash
+# Server control
+frpctl start               # Start FRP server
+frpctl stop                # Stop FRP server
+frpctl restart             # Restart FRP server
+frpctl status              # Show server status
+frpctl logs [n]            # Show last n log lines
+
+# Client management
+frpctl client add <name> [port] [http_user] [http_pass]
+frpctl client list         # List all clients
+frpctl client remove <name>
+frpctl client config <name>
+frpctl client install <name>
+frpctl client online       # Show online clients
+
+# User management
+frpctl user add <user> <pass>
+frpctl user list
+frpctl user remove <user>
+
+# Monitoring
+frpctl monitor             # Real-time dashboard
+frpctl monitor logs        # Monitor logs
+frpctl monitor traffic     # Traffic statistics
+
+# Other
+frpctl info                # Server information
+frpctl backup              # Backup configurations
+```
+
 ### Service Control
 
 | Command | Description |
 |---------|-------------|
-| `sudo systemctl start frp-server` | Start the FRP server |
-| `sudo systemctl stop frp-server` | Stop the FRP server |
-| `sudo systemctl restart frp-server` | Restart the FRP server |
-| `sudo systemctl status frp-server` | Check server status |
-| `sudo systemctl enable frp-server` | Enable auto-start |
-| `sudo systemctl disable frp-server` | Disable auto-start |
+| `sudo systemctl start frps.service` | Start the FRP server |
+| `sudo systemctl stop frps.service` | Stop the FRP server |
+| `sudo systemctl restart frps.service` | Restart the FRP server |
+| `sudo systemctl status frps.service` | Check server status |
+| `sudo systemctl enable frps.service` | Enable auto-start |
+| `sudo systemctl disable frps.service` | Disable auto-start |
 
 ### View Logs
 
 ```bash
 # Real-time server logs
-sudo journalctl -u frp-server -f
+sudo journalctl -u frps.service -f
 
 # Real-time client logs
-sudo journalctl -u frp-client -f
+sudo journalctl -u frpc.service -f
 
 # Last 50 lines
-sudo journalctl -u frp-server -n 50
+sudo journalctl -u frps.service -n 50
 
 # Logs since last boot
-sudo journalctl -u frp-server -b
+sudo journalctl -u frps.service -b
 ```
 
-### Check Server Status
+---
+
+## 👥 Client Management
+
+### Add a New Client
 
 ```bash
-# Is service active?
-sudo systemctl is-active frp-server
+# Add client with random port
+frpctl client add myclient
 
-# Is service enabled?
-sudo systemctl is-enabled frp-server
+# Add client with specific port
+frpctl client add myclient 8050
 
-# Get service PID
-sudo systemctl show frp-server --property=MainPID
-
-# View dashboard
-curl http://localhost:7500
+# Add client with HTTP authentication
+frpctl client add myclient 8050 myuser mypass
 ```
+
+### Generate Install Script for Client
+
+```bash
+# Generate install script
+frpctl client install myclient
+
+# Copy to client machine and run
+scp /etc/frp/clients/myclient-install.sh user@client-server:/
+ssh user@client-server "sudo bash myclient-install.sh"
+```
+
+### Client Configuration Example
+
+```ini
+[common]
+server_addr = 2.144.21.218
+server_port = 7000
+token = YOUR_TOKEN
+
+[myclient-tcp]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 8050
+remote_port = 8050
+
+[myclient-http]
+type = http
+local_ip = 127.0.0.1
+local_port = 8080
+custom_domains = myclient.local
+http_user = myuser
+http_pwd = mypass
+```
+
+---
+
+## 👤 User Management
+
+### Add Proxy User
+
+```bash
+frpctl user add username password
+```
+
+### List Users
+
+```bash
+frpctl user list
+```
+
+### Remove User
+
+```bash
+frpctl user remove username
+```
+
+---
+
+## 📊 Monitoring Dashboard
+
+### Real-time Monitor
+
+```bash
+frpctl monitor
+```
+
+This shows:
+- Server status and uptime
+- Listening ports
+- Registered clients
+- Recent logs
+
+### Traffic Statistics
+
+```bash
+frpctl monitor traffic
+```
+
+### FRP Dashboard
+
+Access the FRP dashboard at: `http://2.144.21.218:7500`
+
+Default credentials:
+- Username: `admin`
+- Password: (set during installation)
+
+---
+
+## 🖥️ Client Admin UI
+
+The Client Admin UI provides a web-based interface to manage and monitor clients.
+
+### Access
+
+URL: `http://2.144.21.218:8080`
+
+### Features
+
+- View all registered clients
+- See online/offline status
+- Monitor traffic per client
+- Add/remove clients
+- Generate install scripts
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/clients` | List all clients |
+| `GET /api/clients/online` | List online clients |
+| `POST /api/clients` | Add new client |
+| `DELETE /api/clients/<name>` | Remove client |
 
 ---
 
@@ -278,13 +432,14 @@ sudo ufw status
 5. **Update FRP** to the latest version
 6. **Enable encryption** for all tunnels
 7. **Use the dashboard** for monitoring
+8. **Enable HTTP authentication** for web proxies
 
 ### Change Token
 
 ```bash
 # Stop services
-sudo systemctl stop frp-server
-sudo systemctl stop frp-client
+sudo systemctl stop frps.service
+sudo systemctl stop frpc.service
 
 # Update token in both config files
 sudo sed -i 's/token = .*/token = NEW_TOKEN/' /etc/frp/frps.ini
@@ -292,8 +447,8 @@ sudo sed -i 's/token = .*/token = NEW_TOKEN/' /etc/frp/frpc.ini
 
 # Reload and restart
 sudo systemctl daemon-reload
-sudo systemctl start frp-server
-sudo systemctl start frp-client
+sudo systemctl start frps.service
+sudo systemctl start frpc.service
 ```
 
 ---
@@ -304,10 +459,10 @@ sudo systemctl start frp-client
 
 ```bash
 # Check error logs
-sudo journalctl -u frp-server --no-pager
+sudo journalctl -u frps.service --no-pager
 
 # Check service configuration
-sudo systemctl cat frp-server
+sudo systemctl cat frps.service
 
 # Test command manually
 /usr/local/bin/frps -c /etc/frp/frps.ini
@@ -330,7 +485,7 @@ nc -zv 2.144.21.218 7000
 
 ```bash
 # Check resource usage
-sudo systemctl status frp-server
+sudo systemctl status frps.service
 
 # View memory usage
 ps aux | grep frp
@@ -347,6 +502,7 @@ ss -tlnp | grep frp
 | `Authentication failed` | Wrong token | Verify token matches server |
 | `Address already in use` | Port in use | Choose different local port |
 | `Timeout` | Network issues | Check firewall and connectivity |
+| `permission denied` | File permissions | Check /etc/frp/ permissions |
 
 ---
 
@@ -361,15 +517,15 @@ ss -tlnp | grep frp
 | **Tunnel Port Range** | 8000-9000 |
 | **Protocol** | TCP + UDP |
 | **Authentication** | Token-based |
-| **Auto-restart** | Yes (10s delay) |
+| **Auto-restart** | Yes (on-failure) |
 | **Logging** | journald |
 
 ### Log Locations
 
 | Log Type | Location |
 |----------|----------|
-| Server logs | `journalctl -u frp-server` |
-| Client logs | `journalctl -u frp-client` |
+| Server logs | `journalctl -u frps.service` |
+| Client logs | `journalctl -u frpc.service` |
 | Config files | `/etc/frp/` |
 | System logs | `/var/log/syslog` or `/var/log/messages` |
 
