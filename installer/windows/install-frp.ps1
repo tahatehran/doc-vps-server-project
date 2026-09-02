@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param()
 
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 
 $FRP_VERSION = '0.71.0'
 $FRP_ARCH = 'windows_amd64'
@@ -24,6 +24,7 @@ $INSTALL_DIR = "$env:ProgramFiles\frp"
 $CONFIG_DIR = "$INSTALL_DIR\config"
 $CONFIG_FILE = "$CONFIG_DIR\frpc.toml"
 $SERVICE_NAME = 'frp-client'
+$NSSM_URL = 'https://nssm.cc/release/nssm-2.24.zip'
 
 function Write-Banner {
     Clear-Host
@@ -277,35 +278,78 @@ remotePort = $remotePort
     Set-Content -Path $CONFIG_FILE -Value $configContent -Encoding UTF8
     Write-Host "Configuration saved to $CONFIG_FILE" -ForegroundColor Green
 
+    # Validate config
+    Write-Host "Validating configuration..." -ForegroundColor Yellow
+    $validateOutput = & "$INSTALL_DIR\frpc.exe" -c $CONFIG_FILE verify 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Configuration validation failed:" -ForegroundColor Red
+        Write-Host $validateOutput -ForegroundColor Red
+        Write-Host "Please check your config file." -ForegroundColor Yellow
+        return
+    }
+    Write-Host "Configuration is valid." -ForegroundColor Green
+
     $service = Get-Service -Name $SERVICE_NAME -ErrorAction SilentlyContinue
     if ($service) {
         Write-Host "Restarting frp-client service..." -ForegroundColor Yellow
-        Restart-Service -Name $SERVICE_NAME -Force
-        Write-Host "Service restarted." -ForegroundColor Green
+        try {
+            Stop-Service -Name $SERVICE_NAME -Force -ErrorAction Stop
+            Start-Service -Name $SERVICE_NAME -ErrorAction Stop
+            Write-Host "Service restarted." -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to restart service: $_" -ForegroundColor Red
+            Write-Host "Trying to start frpc manually for debugging..." -ForegroundColor Yellow
+            Start-Process -FilePath "$INSTALL_DIR\frpc.exe" -ArgumentList "-c `"$CONFIG_FILE`"" -WindowStyle Hidden
+        }
     } else {
-        Write-Host "Creating service..." -ForegroundColor Yellow
+        Write-Host "Creating service with NSSM..." -ForegroundColor Yellow
         $nssmPath = "$INSTALL_DIR\nssm.exe"
         if (-not (Test-Path $nssmPath)) {
-            Invoke-WebRequest -Uri "https://nssm.cc/release/nssm-2.24.zip" -OutFile "$env:TEMP\nssm.zip" -UseBasicParsing
-            Expand-Archive -Path "$env:TEMP\nssm.zip" -DestinationPath "$env:TEMP\nssm" -Force
-            $nssmExe = Get-ChildItem "$env:TEMP\nssm" -Filter "nssm.exe" -Recurse | Select-Object -First 1
-            if ($nssmExe) {
-                Copy-Item $nssmExe.FullName $nssmPath -Force
+            Write-Host "Downloading NSSM..." -ForegroundColor Yellow
+            $nssmZip = "$env:TEMP\nssm.zip"
+            $nssmDir = "$env:TEMP\nssm_extract"
+            if (Test-Path $nssmDir) {
+                Remove-Item $nssmDir -Recurse -Force
+            }
+            try {
+                Invoke-WebRequest -Uri $NSSM_URL -OutFile $nssmZip -UseBasicParsing
+                Expand-Archive -Path $nssmZip -DestinationPath $nssmDir -Force
+                $nssmExe = Get-ChildItem $nssmDir -Filter "nssm.exe" -Recurse | Select-Object -First 1
+                if ($nssmExe) {
+                    Copy-Item $nssmExe.FullName $nssmPath -Force
+                    Write-Host "NSSM installed." -ForegroundColor Green
+                } else {
+                    throw "NSSM executable not found in archive"
+                }
+            } catch {
+                Write-Host "Failed to download NSSM: $_" -ForegroundColor Red
+                Write-Host "Falling back to manual execution mode." -ForegroundColor Yellow
+                Start-Process -FilePath "$INSTALL_DIR\frpc.exe" -ArgumentList "-c `"$CONFIG_FILE`"" -WindowStyle Hidden
+                Write-Host "frpc started manually. It will run until you log off." -ForegroundColor Yellow
+                return
             }
         }
+
         if (Test-Path $nssmPath) {
-            & $nssmPath install $SERVICE_NAME "$INSTALL_DIR\frpc.exe" "-c `"$CONFIG_FILE`""
-            & $nssmPath set $SERVICE_NAME AppDirectory $INSTALL_DIR
-            & $nssmPath set $SERVICE_NAME Start SERVICE_AUTO_START
-            Start-Service -Name $SERVICE_NAME
-            Write-Host "Service created and started." -ForegroundColor Green
-        } else {
-            Write-Host "Could not install service automatically." -ForegroundColor Yellow
-            Write-Host "Please run frpc.exe manually: $INSTALL_DIR\frpc.exe -c `"$CONFIG_FILE`"" -ForegroundColor Yellow
+            try {
+                & $nssmPath install $SERVICE_NAME "$INSTALL_DIR\frpc.exe"
+                & $nssmPath set $SERVICE_NAME AppParameters "-c `"$CONFIG_FILE`""
+                & $nssmPath set $SERVICE_NAME AppDirectory $INSTALL_DIR
+                & $nssmPath set $SERVICE_NAME Start SERVICE_AUTO_START
+                & $nssmPath set $SERVICE_NAME DisplayName "FRP Client"
+                Start-Service -Name $SERVICE_NAME -ErrorAction Stop
+                Write-Host "Service created and started." -ForegroundColor Green
+            } catch {
+                Write-Host "NSSM service creation failed: $_" -ForegroundColor Red
+                Write-Host "Falling back to manual execution mode." -ForegroundColor Yellow
+                Start-Process -FilePath "$INSTALL_DIR\frpc.exe" -ArgumentList "-c `"$CONFIG_FILE`"" -WindowStyle Hidden
+                Write-Host "frpc started manually. It will run until you log off." -ForegroundColor Yellow
+                return
+            }
         }
     }
 
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 3
     Write-Host ""
     Write-Host "=== Connection Status ===" -ForegroundColor Cyan
     $svc = Get-Service -Name $SERVICE_NAME -ErrorAction SilentlyContinue
@@ -314,6 +358,7 @@ remotePort = $remotePort
     } else {
         Write-Host "Service failed to start" -ForegroundColor Red
         Write-Host "Check logs in Event Viewer or run manually." -ForegroundColor Yellow
+        Write-Host "You can test manually with: $INSTALL_DIR\frpc.exe -c `"$CONFIG_FILE`"" -ForegroundColor Yellow
     }
     Write-Host ""
 }
@@ -335,7 +380,7 @@ function Show-Status {
     if ($svc) {
         Write-Host "Service: $($svc.Status)" -ForegroundColor Green
     } else {
-        Write-Host "Service: Not installed" -ForegroundColor Red
+        Write-Host "Service: Not installed" -ForegroundColor Yellow
     }
     Write-Host ""
 }
