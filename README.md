@@ -1,4 +1,4 @@
-# VPS Server Documentation
+# 🌐 VPS Server Documentation
 
 > **🌐 Language:** [English](#english) | [فارسی](#فارسی)
 
@@ -8,10 +8,14 @@
 
 ## 📋 Overview
 
-This repository contains comprehensive documentation for secure tunnel servers. Currently includes:
+This repository contains comprehensive documentation for managing secure tunnel servers. Currently includes:
 
-1. **Bore** - Simple TCP tunnel (Rust)
-2. **FRP** - Fast Reverse Proxy with TCP + UDP support (Go)
+| Feature | Bore | FRP |
+|---------|------|-----|
+| **Protocol** | TCP only | TCP + UDP + HTTP/HTTPS |
+| **Language** | Rust | Go |
+| **Use Case** | Simple tunneling | Production reverse proxy |
+| **Status** | 🔴 Disabled | 🟢 Active |
 
 **🔐 Secure. ⚡ Fast. 🔧 Flexible.**
 
@@ -19,13 +23,36 @@ This repository contains comprehensive documentation for secure tunnel servers. 
 
 ## 🖥️ Server Information
 
-| Detail | Value |
-|--------|-------|
-| **Server IP** | `2.144.21.218` |
-| **Bore Port** | `7835` (TCP only) |
-| **FRP Port** | `7000` (TCP + UDP) |
-| **Tunnel Port Range** | `8000-9000` |
-| **Status** | 🔴 Offline (currently disabled) |
+```
+╔══════════════════════════════════════════════════════════════╗
+║                    🌐 SERVER DETAILS                         ║
+╠══════════════════════════════════════════════════════════════╣
+║  🖥️  Hostname    : nima-server                              ║
+║  📍 IP Address   : 2.144.21.218                              ║
+║  💾 OS           : Debian/Ubuntu Linux                       ║
+╠══════════════════════════════════════════════════════════════╣
+║  ⚡ FRP Server   : v0.71.0 (Active ✅)                       ║
+║  🚪 FRP Port     : 7000 (Main)                               ║
+║  📊 Dashboard    : 7500 (Server Panel)                       ║
+║  🖥️  Client UI   : 7400 (Client Admin)                       ║
+║  📈 Status Page  : 8090 (Public Status)                      ║
+║  🔑 Token Auth   : Enabled                                   ║
+╠══════════════════════════════════════════════════════════════╣
+║  🌐 HTTP Proxy   : 80 (vhost)                                ║
+║  🔒 HTTPS Proxy  : 443 (vhost)                               ║
+║  📁 Tunnel Range : 8000-9000                                 ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+### 🟢 Active Services
+
+| Service | Port | Protocol | Status |
+|---------|------|----------|--------|
+| **FRP Server** | 7000 | TCP | 🟢 Active |
+| **Server Dashboard** | 7500 | HTTP | 🟢 Active |
+| **Client Admin UI** | 7400 | HTTP | 🟢 Active |
+| **Status Page** | 8090 | HTTP | 🟢 Active |
+| **SSH Demo** | 8022 | TCP | 🟢 Active |
 
 ---
 
@@ -70,18 +97,21 @@ doc-vps-server-project/
 ## 📚 Bore Documentation (TCP Only)
 
 ### 1. 🖥️ Server Documentation
+
 | Language | Link |
 |----------|------|
 | English | [bore/en/server.md](bore/en/server.md) |
 | فارسی | [bore/fa/server.md](bore/fa/server.md) |
 
 ### 2. 👨‍💻 Client (Developer)
+
 | Language | Link |
 |----------|------|
 | English | [bore/en/client-developer.md](bore/en/client-developer.md) |
 | فارسی | [bore/fa/client-developer.md](bore/fa/client-developer.md) |
 
 ### 3. 👤 Client (User)
+
 | Language | Link |
 |----------|------|
 | English | [bore/en/client-user.md](bore/en/client-user.md) |
@@ -92,18 +122,21 @@ doc-vps-server-project/
 ## 📚 FRP Documentation (TCP + UDP)
 
 ### 1. 🖥️ Server Documentation
+
 | Language | Link |
 |----------|------|
 | English | [frp/en/server.md](frp/en/server.md) |
 | فارسی | [frp/fa/server.md](frp/fa/server.md) |
 
 ### 2. 👨‍💻 Client (Developer)
+
 | Language | Link |
 |----------|------|
 | English | [frp/en/client-developer.md](frp/en/client-developer.md) |
 | فارسی | [frp/fa/client-developer.md](frp/fa/client-developer.md) |
 
 ### 3. 👤 Client (User)
+
 | Language | Link |
 |----------|------|
 | English | [frp/en/client-user.md](frp/en/client-user.md) |
@@ -114,20 +147,38 @@ doc-vps-server-project/
 ## 🚀 Quick Start
 
 ### Bore (TCP Only)
+
 ```bash
 bore local 8080 --to 2.144.21.218:7835 --secret "YOUR_SECRET"
 ```
 
 ### FRP (TCP + UDP)
-```bash
-# TCP
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8080
 
-# UDP
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P udp --local-port 8081 --remote-port 8081
+```bash
+# Download FRPC
+curl -L -o frpc.tar.gz "https://github.com/fatedier/frp/releases/download/v0.71.0/frp_0.71.0_linux_amd64.tar.gz"
+tar -xzf frpc.tar.gz
+
+# Configure
+cat > frpc.toml <<EOF
+serverAddr = "2.144.21.218"
+serverPort = 7000
+auth.method = "token"
+auth.token = "YOUR_TOKEN"
+
+[[proxies]]
+name = "my-app"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8080
+remotePort = 8080
+EOF
+
+# Run
+./frpc -c frpc.toml
 ```
 
-> ⚠️ **Note:** The server is currently offline. Contact the administrator for access.
+> ✅ **Server is online and ready to use!**
 
 ---
 
@@ -156,10 +207,14 @@ We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for
 
 ## 📋 نمای کلی
 
-این مخزن مستندات جامع برای سرورهای تونل امن را شامل می‌شود. در حال حاضر شامل:
+این مخزن مستندات جامع برای مدیریت سرورهای تونل امن را شامل می‌شود. در حال حاضر شامل:
 
-1. **Bore** - تونل TCP ساده (Rust)
-2. **FRP** - پروکسی معکوس سریع با پشتیبانی TCP + UDP (Go)
+| ویژگی | Bore | FRP |
+|--------|------|-----|
+| **پروتکل** | فقط TCP | TCP + UDP + HTTP/HTTPS |
+| **زبان** | Rust | Go |
+| **کاربرد** | تونل ساده | پروکسی معکوس حرفه‌ای |
+| **وضعیت** | 🔴 غیرفعال | 🟢 فعال |
 
 **🔐 امن. ⚡ سریع. 🔧 انعطاف‌پذیر.**
 
@@ -167,13 +222,36 @@ We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for
 
 ## 🖥️ اطلاعات سرور
 
-| جزئیات | مقدار |
-|--------|-------|
-| **آی پی سرور** | `2.144.21.218` |
-| **پورت Bore** | `7835` (فقط TCP) |
-| **پورت FRP** | `7000` (TCP + UDP) |
-| **محدوده پورت تونل** | `8000-9000` |
-| **وضعیت** | 🔴 آفلاین (در حال حاضر غیرفعال) |
+```
+╔══════════════════════════════════════════════════════════════╗
+║                    🌐 مشخصات سرور                            ║
+╠══════════════════════════════════════════════════════════════╣
+║  🖥️  Hostname    : nima-server                              ║
+║  📍 آی‌پی سرور   : 2.144.21.218                              ║
+║  💾 سیستم‌عامل   : Debian/Ubuntu Linux                       ║
+╠══════════════════════════════════════════════════════════════╣
+║  ⚡ FRP Server   : v0.71.0 (فعال ✅)                         ║
+║  🚪 پورت FRP     : 7000 (اصلی)                               ║
+║  📊 داشبورد      : 7500 (پنل سرور)                           ║
+║  🖥️  Client UI   : 7400 (مدیریت کلاینت)                      ║
+║  📈 صفحه وضعیت  : 8090 (وضعیت عمومی)                         ║
+║  🔑 احراز هویت   : Token                                     ║
+╠══════════════════════════════════════════════════════════════╣
+║  🌐 پروکسی HTTP  : 80 (vhost)                                ║
+║  🔒 پروکسی HTTPS : 443 (vhost)                               ║
+║  📁 محدوده تونل  : 8000-9000                                 ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+### 🟢 سرویس‌های فعال
+
+| سرویس | پورت | پروتکل | وضعیت |
+|--------|------|--------|--------|
+| **سرور FRP** | 7000 | TCP | 🟢 فعال |
+| **داشبورد سرور** | 7500 | HTTP | 🟢 فعال |
+| **رابط کاربری کلاینت** | 7400 | HTTP | 🟢 فعال |
+| **صفحه وضعیت** | 8090 | HTTP | 🟢 فعال |
+| **دمو SSH** | 8022 | TCP | 🟢 فعال |
 
 ---
 
@@ -218,20 +296,23 @@ doc-vps-server-project/
 ## 📚 مستندات Bore (فقط TCP)
 
 ### ۱. 🖥️ مستندات سرور
+
 | زبان | لینک |
-|----------|------|
+|------|------|
 | English | [bore/en/server.md](bore/en/server.md) |
 | فارسی | [bore/fa/server.md](bore/fa/server.md) |
 
 ### ۲. 👨‍💻 کلاینت (توسعه‌دهنده)
+
 | زبان | لینک |
-|----------|------|
+|------|------|
 | English | [bore/en/client-developer.md](bore/en/client-developer.md) |
 | فارسی | [bore/fa/client-developer.md](bore/fa/client-developer.md) |
 
 ### ۳. 👤 کلاینت (کاربر)
+
 | زبان | لینک |
-|----------|------|
+|------|------|
 | English | [bore/en/client-user.md](bore/en/client-user.md) |
 | فارسی | [bore/fa/client-user.md](bore/fa/client-user.md) |
 
@@ -240,20 +321,23 @@ doc-vps-server-project/
 ## 📚 مستندات FRP (TCP + UDP)
 
 ### ۱. 🖥️ مستندات سرور
+
 | زبان | لینک |
-|----------|------|
+|------|------|
 | English | [frp/en/server.md](frp/en/server.md) |
 | فارسی | [frp/fa/server.md](frp/fa/server.md) |
 
 ### ۲. 👨‍💻 کلاینت (توسعه‌دهنده)
+
 | زبان | لینک |
-|----------|------|
+|------|------|
 | English | [frp/en/client-developer.md](frp/en/client-developer.md) |
 | فارسی | [frp/fa/client-developer.md](frp/fa/client-developer.md) |
 
 ### ۳. 👤 کلاینت (کاربر)
+
 | زبان | لینک |
-|----------|------|
+|------|------|
 | English | [frp/en/client-user.md](frp/en/client-user.md) |
 | فارسی | [frp/fa/client-user.md](frp/fa/client-user.md) |
 
@@ -262,20 +346,38 @@ doc-vps-server-project/
 ## 🚀 شروع سریع
 
 ### Bore (فقط TCP)
+
 ```bash
 bore local 8080 --to 2.144.21.218:7835 --secret "رمز_شما"
 ```
 
 ### FRP (TCP + UDP)
-```bash
-# TCP
-frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 8080 --remote-port 8080
 
-# UDP
-frpc -s 2.144.21.218:7000 -t توکن_شما -P udp --local-port 8081 --remote-port 8081
+```bash
+# دانلود FRPC
+curl -L -o frpc.tar.gz "https://github.com/fatedier/frp/releases/download/v0.71.0/frp_0.71.0_linux_amd64.tar.gz"
+tar -xzf frpc.tar.gz
+
+# تنظیم کانفیگ
+cat > frpc.toml <<EOF
+serverAddr = "2.144.21.218"
+serverPort = 7000
+auth.method = "token"
+auth.token = "توکن_شما"
+
+[[proxies]]
+name = "my-app"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8080
+remotePort = 8080
+EOF
+
+# اجرا
+./frpc -c frpc.toml
 ```
 
-> ⚠️ **توجه:** سرور در حال حاضر آفلاین است. برای دسترسی با مدیر سرور تماس بگیرید.
+> ✅ **سرور آنلاین و آماده استفاده است!**
 
 ---
 
