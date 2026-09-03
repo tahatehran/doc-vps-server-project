@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PowerShell
         shell: powershell
@@ -58,8 +58,15 @@ jobs:
           $wrapperPath = "$env:RUNNER_TEMP\wrapper.ps1"
           Set-Content -Path $wrapperPath -Value $wrapper -Encoding UTF8
           
-          # Convert to EXE using ps2exe
-          Invoke-PS2EXE -InputFile $wrapperPath -OutputFile $outputPath -noConsole $false -version "$env:GITHUB_REF_NAME"
+          # ps2exe only accepts a version in the form n.n.n[.n[.n[.n]]];
+          # GITHUB_REF_NAME is a branch name or "v"-prefixed tag, so derive digits from it
+          $version = '0.0.0.0'
+          if ("$env:GITHUB_REF_NAME" -match 'v?(\d+(?:\.\d+){0,3})') {
+            $parts = $matches[1].Split('.')
+            while ($parts.Count -lt 4) { $parts += '0' }
+            $version = ($parts -join '.')
+          }
+          Invoke-PS2EXE -InputFile $wrapperPath -OutputFile $outputPath -noConsole:$false -version $version
           
           Write-Host "EXE built at $outputPath"
           Write-Host "EXE size: $((Get-Item $outputPath).Length / 1MB) MB"
