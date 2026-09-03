@@ -182,6 +182,31 @@ EOF
 
 ---
 
+## 📥 Quick Install (FRP Client)
+
+### Windows — Offline Installer (Recommended)
+1. Go to [Releases](https://github.com/tahatehran/doc-vps-server-project/releases/latest) → Download `frp-client-installer-full.zip`
+2. Extract → Open **PowerShell as Administrator** → Run `.\install-frp.exe`
+3. Select **1) Install FRP Client** → then **4) Connect to Server** → enter your token & ports
+
+> Bundled `frpc.exe` included — no internet needed on target machine.
+
+### Windows — Online Script
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tahatehran/doc-vps-server-project/main/installer/windows/install-frp.ps1" -OutFile "install-frp.ps1"
+.\install-frp.ps1
+```
+
+### Linux
+```bash
+curl -fsSL -o install-frp.sh https://raw.githubusercontent.com/tahatehran/doc-vps-server-project/main/installer/linux/install-frp.sh
+chmod +x install-frp.sh
+sudo ./install-frp.sh
+```
+
+---
+
 ## 📜 License
 
 This project is licensed under the **MIT License** - see [LICENSE.md](LICENSE.md) for details.
@@ -378,6 +403,31 @@ EOF
 ```
 
 > ✅ **سرور آنلاین و آماده استفاده است!**
+
+---
+
+## 📥 نصب سریع (FRP Client)
+
+### ویندوز — نصب‌کننده آفلاین (پیشنهاد شده)
+1. به [Releases](https://github.com/tahatehran/doc-vps-server-project/releases/latest) بروید → `frp-client-installer-full.zip` را دانلود کنید
+2. استخراج کنید → **PowerShell را به عنوان Administrator باز کنید** → `.\install-frp.exe` را اجرا کنید
+3. گزینه **1) Install FRP Client** و بعد **4) Connect to Server** → توکن و پورت‌ها را وارد کنید
+
+> `frpc.exe` در کنار نصب‌کننده است — در ماشین مقصد اینترنت لازم نیست.
+
+### ویندوز — اسکریپت آنلاین
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/tahatehran/doc-vps-server-project/main/installer/windows/install-frp.ps1" -OutFile "install-frp.ps1"
+.\install-frp.ps1
+```
+
+### لینوکس
+```bash
+curl -fsSL -o install-frp.sh https://raw.githubusercontent.com/tahatehran/doc-vps-server-project/main/installer/linux/install-frp.sh
+chmod +x install-frp.sh
+sudo ./install-frp.sh
+```
 
 ---
 

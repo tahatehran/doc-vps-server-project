@@ -1,4 +1,3 @@
-#Requires -RunAsAdministrator
 <#
 .SYNOPSIS
     FRP Client Installer for Windows
@@ -25,6 +24,11 @@ $CONFIG_DIR = "$INSTALL_DIR\config"
 $CONFIG_FILE = "$CONFIG_DIR\frpc.toml"
 $SERVICE_NAME = 'frp-client'
 $NSSM_URL = 'https://nssm.cc/release/nssm-2.24.zip'
+
+# Directory of the running script or compiled EXE; a frpc.exe placed next to
+# it is used directly so the release ZIP works fully offline
+$ScriptBaseDir = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$BundledFrpc = Join-Path $ScriptBaseDir 'frpc.exe'
 
 function Write-Banner {
     Clear-Host
@@ -74,26 +78,6 @@ function Install-FrpClient {
 
     Write-Host "Installing FRP Client..." -ForegroundColor Cyan
 
-    $tmpZip = "$env:TEMP\frp.zip"
-    $tmpDir = "$env:TEMP\frp_extract"
-
-    if (Test-Path $tmpDir) {
-        Remove-Item $tmpDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
-
-    Write-Host "Downloading FRP Client v$FRP_VERSION..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $FRP_URL -OutFile $tmpZip -UseBasicParsing
-
-    Write-Host "Extracting..." -ForegroundColor Cyan
-    Expand-Archive -Path $tmpZip -DestinationPath $tmpDir -Force
-
-    $extractedDir = Get-ChildItem $tmpDir -Directory | Select-Object -First 1
-    if (-not $extractedDir) {
-        Write-Host "Download failed or wrong archive format." -ForegroundColor Red
-        exit 1
-    }
-
     if (-not (Test-Path $INSTALL_DIR)) {
         New-Item -ItemType Directory -Path $INSTALL_DIR -Force | Out-Null
     }
@@ -101,7 +85,34 @@ function Install-FrpClient {
         New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
     }
 
-    Copy-Item "$($extractedDir.FullName)\frpc.exe" "$INSTALL_DIR\frpc.exe" -Force
+    if (Test-Path $BundledFrpc) {
+        Write-Host "Using frpc.exe bundled next to the installer (offline install)..." -ForegroundColor Cyan
+        Copy-Item $BundledFrpc "$INSTALL_DIR\frpc.exe" -Force
+    } else {
+        $tmpZip = "$env:TEMP\frp.zip"
+        $tmpDir = "$env:TEMP\frp_extract"
+
+        if (Test-Path $tmpDir) {
+            Remove-Item $tmpDir -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+
+        Write-Host "Downloading FRP Client v$FRP_VERSION..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $FRP_URL -OutFile $tmpZip -UseBasicParsing
+
+        Write-Host "Extracting..." -ForegroundColor Cyan
+        Expand-Archive -Path $tmpZip -DestinationPath $tmpDir -Force
+
+        $extractedDir = Get-ChildItem $tmpDir -Directory | Select-Object -First 1
+        if (-not $extractedDir) {
+            Write-Host "Download failed or wrong archive format." -ForegroundColor Red
+            exit 1
+        }
+
+        Copy-Item "$($extractedDir.FullName)\frpc.exe" "$INSTALL_DIR\frpc.exe" -Force
+        Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
+        Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
     Write-Host "Installed to $INSTALL_DIR\frpc.exe" -ForegroundColor Green
 
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
@@ -113,13 +124,38 @@ function Install-FrpClient {
 
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
-    Write-Host "  1. Edit config: notepad $CONFIG_FILE"
-    Write-Host "  2. Start service: .\install-frp.ps1 (option 4)"
+    Write-Host "  1. Run option 4 (Connect to Server) to configure and connect"
+    Write-Host "  2. Or edit config manually: notepad $CONFIG_FILE"
     Write-Host "  3. Check status: Get-Service $SERVICE_NAME"
     Write-Host ""
 
-    Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
-    Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+    # Pre-create a template config so option 4 and manual editing work right away
+    if (-not (Test-Path $CONFIG_FILE)) {
+        $template = @"
+serverAddr = "2.144.21.218"
+serverPort = 7000
+auth.method = "token"
+auth.token = "YOUR_TOKEN_HERE"
+
+transport.protocol = "tcp"
+transport.poolCount = 5
+transport.tcpMux = true
+transport.heartbeatInterval = 30
+transport.heartbeatTimeout = 90
+
+log.level = "info"
+log.maxDays = 3
+
+[[proxies]]
+name = "my-app"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8080
+remotePort = 8001
+"@
+        Set-Content -Path $CONFIG_FILE -Value $template -Encoding UTF8
+        Write-Host "Default config template created at $CONFIG_FILE" -ForegroundColor Green
+    }
 }
 
 function Uninstall-FrpClient {
@@ -162,25 +198,34 @@ function Update-FrpClient {
 
     Write-Host "Updating FRP Client to v$FRP_VERSION..." -ForegroundColor Cyan
 
-    $tmpZip = "$env:TEMP\frp.zip"
-    $tmpDir = "$env:TEMP\frp_extract"
+    if (Test-Path $BundledFrpc) {
+        Write-Host "Using frpc.exe bundled next to the installer (offline update)..." -ForegroundColor Cyan
+        Copy-Item $BundledFrpc "$INSTALL_DIR\frpc.exe" -Force
+        Write-Host "Updated to bundled version" -ForegroundColor Green
+    } else {
+        $tmpZip = "$env:TEMP\frp.zip"
+        $tmpDir = "$env:TEMP\frp_extract"
 
-    if (Test-Path $tmpDir) {
-        Remove-Item $tmpDir -Recurse -Force
+        if (Test-Path $tmpDir) {
+            Remove-Item $tmpDir -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+
+        Invoke-WebRequest -Uri $FRP_URL -OutFile $tmpZip -UseBasicParsing
+        Expand-Archive -Path $tmpZip -DestinationPath $tmpDir -Force
+
+        $extractedDir = Get-ChildItem $tmpDir -Directory | Select-Object -First 1
+        if (-not $extractedDir) {
+            Write-Host "Download failed." -ForegroundColor Red
+            exit 1
+        }
+
+        Copy-Item "$($extractedDir.FullName)\frpc.exe" "$INSTALL_DIR\frpc.exe" -Force
+        Write-Host "Updated to v$FRP_VERSION" -ForegroundColor Green
+
+        Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
+        Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
     }
-    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
-
-    Invoke-WebRequest -Uri $FRP_URL -OutFile $tmpZip -UseBasicParsing
-    Expand-Archive -Path $tmpZip -DestinationPath $tmpDir -Force
-
-    $extractedDir = Get-ChildItem $tmpDir -Directory | Select-Object -First 1
-    if (-not $extractedDir) {
-        Write-Host "Download failed." -ForegroundColor Red
-        exit 1
-    }
-
-    Copy-Item "$($extractedDir.FullName)\frpc.exe" "$INSTALL_DIR\frpc.exe" -Force
-    Write-Host "Updated to v$FRP_VERSION" -ForegroundColor Green
 
     $service = Get-Service -Name $SERVICE_NAME -ErrorAction SilentlyContinue
     if ($service -and $service.Status -eq 'Running') {
@@ -188,9 +233,29 @@ function Update-FrpClient {
         Restart-Service -Name $SERVICE_NAME -Force
         Write-Host "Service restarted." -ForegroundColor Green
     }
+}
 
-    Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
-    Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue
+function Start-FrpcScService {
+    # Fallback when NSSM is unavailable: create the service with built-in sc.exe
+    $binPath = "`"$INSTALL_DIR\frpc.exe`" -c `"$CONFIG_FILE`""
+    sc.exe create $SERVICE_NAME binPath= $binPath start= auto | Out-Null
+    if ($LASTEXITCODE -ne 0) { return $false }
+    sc.exe description $SERVICE_NAME "FRP Client tunnel service" | Out-Null
+    try {
+        Start-Service -Name $SERVICE_NAME -ErrorAction Stop
+        Write-Host "Service created and started." -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "Failed to start service: $_" -ForegroundColor Red
+        sc.exe delete $SERVICE_NAME | Out-Null
+        return $false
+    }
+}
+
+function Start-FrpcManually {
+    Write-Host "Falling back to manual execution mode." -ForegroundColor Yellow
+    Start-Process -FilePath "$INSTALL_DIR\frpc.exe" -ArgumentList "-c `"$CONFIG_FILE`"" -WindowStyle Hidden
+    Write-Host "frpc started manually. It will run until you log off." -ForegroundColor Yellow
 }
 
 function Connect-ToServer {
@@ -278,9 +343,9 @@ remotePort = $remotePort
     Set-Content -Path $CONFIG_FILE -Value $configContent -Encoding UTF8
     Write-Host "Configuration saved to $CONFIG_FILE" -ForegroundColor Green
 
-    # Validate config
+    # Validate config (verify is a subcommand and must come before -c)
     Write-Host "Validating configuration..." -ForegroundColor Yellow
-    $validateOutput = & "$INSTALL_DIR\frpc.exe" -c $CONFIG_FILE verify 2>&1
+    $validateOutput = & "$INSTALL_DIR\frpc.exe" verify -c $CONFIG_FILE 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Configuration validation failed:" -ForegroundColor Red
         Write-Host $validateOutput -ForegroundColor Red
@@ -323,9 +388,8 @@ remotePort = $remotePort
                 }
             } catch {
                 Write-Host "Failed to download NSSM: $_" -ForegroundColor Red
-                Write-Host "Falling back to manual execution mode." -ForegroundColor Yellow
-                Start-Process -FilePath "$INSTALL_DIR\frpc.exe" -ArgumentList "-c `"$CONFIG_FILE`"" -WindowStyle Hidden
-                Write-Host "frpc started manually. It will run until you log off." -ForegroundColor Yellow
+                if (Start-FrpcScService) { return }
+                Start-FrpcManually
                 return
             }
         }
@@ -341,11 +405,12 @@ remotePort = $remotePort
                 Write-Host "Service created and started." -ForegroundColor Green
             } catch {
                 Write-Host "NSSM service creation failed: $_" -ForegroundColor Red
-                Write-Host "Falling back to manual execution mode." -ForegroundColor Yellow
-                Start-Process -FilePath "$INSTALL_DIR\frpc.exe" -ArgumentList "-c `"$CONFIG_FILE`"" -WindowStyle Hidden
-                Write-Host "frpc started manually. It will run until you log off." -ForegroundColor Yellow
+                if (-not (Start-FrpcScService)) { Start-FrpcManually }
                 return
             }
+        } else {
+            if (-not (Start-FrpcScService)) { Start-FrpcManually }
+            return
         }
     }
 
@@ -386,6 +451,14 @@ function Show-Status {
 }
 
 function Main {
+    # #Requires -RunAsAdministrator is not supported inside ps2exe-compiled
+    # executables, so elevation is enforced at runtime instead
+    if (-not (Test-Administrator)) {
+        Write-Host "This installer requires Administrator privileges." -ForegroundColor Red
+        Write-Host "Right-click PowerShell and select 'Run as Administrator', then run this again." -ForegroundColor Yellow
+        if ($Host.Name -eq 'ConsoleHost') { exit 1 } else { return }
+    }
+
     Write-Banner
     Show-Status
 
