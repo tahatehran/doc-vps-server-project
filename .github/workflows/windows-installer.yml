@@ -1,0 +1,96 @@
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+          Install-Module -Name ps2exe -Scope CurrentUser -Force -AllowClobber
+
+      - name: Download FRP Client
+        shell: powershell
+        run: |
+          $version = "0.71.0"
+          $url = "https://github.com/fatedier/frp/releases/download/v${version}/frp_${version}_windows_amd64.zip"
+          $zip = "$env:TEMP\frp.zip"
+          $extract = "$env:RUNNER_TEMP\frp_extract"
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          Expand-Archive -Path $zip -DestinationPath $extract -Force
+          $frpc = Get-ChildItem $extract -Recurse -Filter "frpc.exe" | Select-Object -First 1
+          Copy-Item $frpc.FullName "$env:RUNNER_TEMP\frpc.exe" -Force
+          Write-Host "FRP downloaded to $env:RUNNER_TEMP\frpc.exe"
+
+      - name: Build Installer EXE
+        shell: powershell
+        run: |
+          $scriptPath = "$env:GITHUB_WORKSPACE\installer\windows\install-frp.ps1"
+          $outputPath = "$env:RUNNER_TEMP\install-frp.exe"
+          
+          # Create a wrapper that includes frpc.exe
+          $wrapper = @"
+            `$ErrorActionPreference = 'Continue'
+            `$env:FRP_EMBEDDED = '$($env:RUNNER_TEMP -replace '\\','/')/frpc.exe'
+            `$scriptPath = Join-Path `$PSScriptRoot 'install-frp.ps1'
+            if (Test-Path `$scriptPath) {
+              & `$scriptPath
+            } else {
+              Write-Host 'Installer script not found.'
+              pause
+            }
+          "@
+          
+          $wrapperPath = "$env:RUNNER_TEMP\wrapper.ps1"
+          Set-Content -Path $wrapperPath -Value $wrapper -Encoding UTF8
+          
+          # Convert to EXE using ps2exe
+          Invoke-PS2EXE -InputFile $wrapperPath -OutputFile $outputPath -noConsole $false -version "$env:GITHUB_REF_NAME"
+          
+          Write-Host "EXE built at $outputPath"
+          Write-Host "EXE size: $((Get-Item $outputPath).Length / 1MB) MB"
+
+      - name: Create ZIP Package
+        shell: powershell
+        run: |
+          $zipPath = "$env:RUNNER_TEMP\frp-client-installer.zip"
+          $files = @(
+            "$env:RUNNER_TEMP\install-frp.exe",
+            "$env:RUNNER_TEMP\frpc.exe"
+          )
+          Compress-Archive -Path $files -DestinationPath $zipPath -Force
+          7z a -tzip "$env:RUNNER_TEMP\frp-client-installer-full.zip" "$env:RUNNER_TEMP\install-frp.exe" "$env:RUNNER_TEMP\frpc.exe" "$env:GITHUB_WORKSPACE\installer\README.md" "$env:GITHUB_WORKSPACE\installer\windows\install-frp.ps1"
+          Write-Host "ZIP created"
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ runner.temp }}/install-frp.exe
+            ${{ runner.temp }}/frp-client-installer.zip
+            ${{ runner.temp }}/frp-client-installer-full.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload EXE as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frp-client-installer-windows
+          path: ${{ runner.temp }}/install-frp.exe
+          retention-days: 30
