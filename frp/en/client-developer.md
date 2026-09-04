@@ -54,10 +54,10 @@ scoop install frp
 
 ```bash
 # Basic TCP connection
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 
 # UDP connection
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P udp --local-port 8081 --remote-port 8081
+frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8081 --remote-port 8081
 
 # Using config file
 frpc -c /etc/frp/frpc.ini
@@ -66,14 +66,15 @@ frpc -c /etc/frp/frpc.ini
 ### Command Syntax
 
 ```bash
-frpc -s <SERVER_ADDR:PORT> -t <TOKEN> -P <PROTOCOL> --local-port <PORT> --remote-port <PORT>
+frpc <PROTOCOL> --server-addr <SERVER_ADDR> --server-port <PORT> --token <TOKEN> --local-port <PORT> --remote-port <PORT>
 ```
 
 | Parameter | Description | Required |
 |-----------|-------------|----------|
-| `-s` | Server address (IP:Port) | Yes |
-| `-t` | Authentication token | Yes |
-| `-P` | Protocol (tcp/udp) | Yes |
+| `<PROTOCOL>` | Subcommand: `tcp`, `udp`, `http`, `stcp`, ... | Yes |
+| `--server-addr` | Server address (IP) | Yes |
+| `--server-port` | Server port | Yes |
+| `--token` | Authentication token | Yes |
 | `--local-port` | Local port to expose | Yes |
 | `--remote-port` | Remote port on server | Yes |
 
@@ -86,7 +87,8 @@ frpc -s <SERVER_ADDR:PORT> -t <TOKEN> -P <PROTOCOL> --local-port <PORT> --remote
 ```bash
 # Create environment file
 cat > ~/.frp.env <<EOF
-export FRP_SERVER="2.144.21.218:7000"
+export FRP_SERVER_ADDR="2.144.21.218"
+export FRP_SERVER_PORT="7000"
 export FRP_TOKEN="YOUR_TOKEN"
 export FRP_LOCAL_PORT="8080"
 export FRP_REMOTE_PORT="8080"
@@ -97,7 +99,7 @@ EOF
 source ~/.frp.env
 
 # Use in commands
-frpc -s $FRP_SERVER -t $FRP_TOKEN -P $FRP_PROTOCOL --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
+frpc $FRP_PROTOCOL --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
 ```
 
 ### Persistent Connection Script
@@ -106,7 +108,8 @@ frpc -s $FRP_SERVER -t $FRP_TOKEN -P $FRP_PROTOCOL --local-port $FRP_LOCAL_PORT 
 #!/bin/bash
 # frp-tunnel.sh - Persistent tunnel with auto-reconnect
 
-SERVER="${FRP_SERVER:-2.144.21.218:7000}"
+SERVER_ADDR="${FRP_SERVER_ADDR:-2.144.21.218}"
+SERVER_PORT="${FRP_SERVER_PORT:-7000}"
 TOKEN="${FRP_TOKEN:-YOUR_TOKEN}"
 PROTOCOL="${FRP_PROTOCOL:-tcp}"
 LOCAL_PORT="${FRP_LOCAL_PORT:-8080}"
@@ -114,8 +117,7 @@ REMOTE_PORT="${FRP_REMOTE_PORT:-8080}"
 
 while true; do
     echo "[$(date)] Connecting..."
-    frpc -s $SERVER -t $TOKEN -P $PROTOCOL --local-port $LOCAL_PORT --remote-port $REMOTE_PORT
-    echo "[$(date)] Disconnected. Reconnecting in 5s..."
+    frpc $PROTOCOL --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $LOCAL_PORT --remote-port $REMOTE_PORT    echo "[$(date)] Disconnected. Reconnecting in 5s..."
     sleep 5
 done
 ```
@@ -139,8 +141,9 @@ import signal
 import time
 
 class FRPClient:
-    def __init__(self, server, token, protocol, local_port, remote_port):
-        self.server = server
+    def __init__(self, server_addr, server_port, token, protocol, local_port, remote_port):
+        self.server_addr = server_addr
+        self.server_port = server_port
         self.token = token
         self.protocol = protocol
         self.local_port = local_port
@@ -150,9 +153,10 @@ class FRPClient:
     def start(self):
         """Start the FRP tunnel"""
         cmd = [
-            'frpc', '-s', self.server,
-            '-t', self.token,
-            '-P', self.protocol,
+            'frpc', self.protocol,
+            '--server-addr', self.server_addr,
+            '--server-port', str(self.server_port),
+            '--token', self.token,
             '--local-port', str(self.local_port),
             '--remote-port', str(self.remote_port)
         ]
@@ -178,7 +182,8 @@ class FRPClient:
 # Usage
 if __name__ == "__main__":
     client = FRPClient(
-        server="2.144.21.218:7000",
+        server_addr="2.144.21.218",
+        server_port=7000,
         token="YOUR_TOKEN",
         protocol="tcp",
         local_port=8080,
@@ -199,8 +204,9 @@ if __name__ == "__main__":
 const { spawn } = require('child_process');
 
 class FRPClient {
-    constructor(server, token, protocol, localPort, remotePort) {
-        this.server = server;
+    constructor(serverAddr, serverPort, token, protocol, localPort, remotePort) {
+        this.serverAddr = serverAddr;
+        this.serverPort = serverPort;
         this.token = token;
         this.protocol = protocol;
         this.localPort = localPort;
@@ -211,9 +217,10 @@ class FRPClient {
     start() {
         return new Promise((resolve, reject) => {
             this.process = spawn('frpc', [
-                '-s', this.server,
-                '-t', this.token,
-                '-P', this.protocol,
+                this.protocol,
+                '--server-addr', this.serverAddr,
+                '--server-port', this.serverPort.toString(),
+                '--token', this.token,
                 '--local-port', this.localPort.toString(),
                 '--remote-port', this.remotePort.toString()
             ]);
@@ -242,7 +249,7 @@ class FRPClient {
 }
 
 // Usage
-const client = new FRPClient('2.144.21.218:7000', 'YOUR_TOKEN', 'tcp', 8080, 8080);
+const client = new FRPClient('2.144.21.218', 7000, 'YOUR_TOKEN', 'tcp', 8080, 8080);
 client.start();
 ```
 
@@ -265,7 +272,7 @@ start_tunnel() {
     local name=$4
     
     echo "Starting $name (local:$local_port -> remote:$remote_port, $protocol)"
-    frpc -s 2.144.21.218:7000 -t "$FRP_TOKEN" -P $protocol --local-port $local_port --remote-port $remote_port &
+    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $local_port --remote-port $remote_port &
 }
 
 start_all() {
@@ -310,7 +317,7 @@ main() {
     while true; do
         if ! check_tunnel ${LOCAL_PORT:-8080}; then
             echo "[$(date)] Tunnel down, restarting..."
-            frpc -s 2.144.21.218:7000 -t "$FRP_TOKEN" -P ${PROTOCOL:-tcp} --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
+            frpc ${PROTOCOL:-tcp} --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
             sleep 2
         fi
         sleep 10
@@ -335,7 +342,7 @@ declare -A PORTS=(
 for port in "${!PORTS[@]}"; do
     IFS=':' read -r protocol name <<< "${PORTS[$port]}"
     echo "Forwarding $name (port $port, $protocol)"
-    frpc -s 2.144.21.218:7000 -t "$FRP_TOKEN" -P $protocol --local-port $port --remote-port $port &
+    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $port --remote-port $port &
 done
 
 echo "All tunnels started. Press Ctrl+C to stop."
@@ -356,10 +363,10 @@ wait
 
 ```bash
 # Good: Use environment variables
-frpc -s $FRP_SERVER -t $FRP_TOKEN -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port 8080 --remote-port 8080
 
 # Bad: Hardcoded token
-frpc -s 2.144.21.218:7000 -t "my-secret-token" -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token" --local-port 8080 --remote-port 8080
 ```
 
 ### Reliability
@@ -393,7 +400,7 @@ frpc -s 2.144.21.218:7000 -t "my-secret-token" -P tcp --local-port 8080 --remote
 
 ```bash
 # Enable verbose logging
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8080 --log-level debug
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 ```
 
 ### Network Diagnostics
@@ -425,7 +432,6 @@ Options:
       --local-port <LOCAL_PORT>      Local port to expose
       --remote-port <REMOTE_PORT>    Remote port on server
   -c, --config <CONFIG>              Config file path
-      --log-level <LOG_LEVEL>        Log level (trace/debug/info/warn/error)
       --log-file <LOG_FILE>          Log file path
   -h, --help                         Print help information
   -V, --version                      Print version information
@@ -435,7 +441,8 @@ Options:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `FRP_SERVER` | Server address | None |
+| `FRP_SERVER_ADDR` | Server address | None |
+| `FRP_SERVER_PORT` | Server port | None |
 | `FRP_TOKEN` | Authentication token | None |
 | `FRP_PROTOCOL` | Protocol type | tcp |
 | `FRP_LOCAL_PORT` | Local port | None |

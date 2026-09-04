@@ -54,10 +54,10 @@ scoop install frp
 
 ```bash
 # اتصال TCP پایه
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 
 # اتصال UDP
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P udp --local-port 8081 --remote-port 8081
+frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8081 --remote-port 8081
 
 # استفاده از فایل پیکربندی
 frpc -c /etc/frp/frpc.ini
@@ -66,14 +66,15 @@ frpc -c /etc/frp/frpc.ini
 ### نحوه استفاده
 
 ```bash
-frpc -s <SERVER_ADDR:PORT> -t <TOKEN> -P <PROTOCOL> --local-port <PORT> --remote-port <PORT>
+frpc <PROTOCOL> --server-addr <SERVER_ADDR> --server-port <PORT> --token <TOKEN> --local-port <PORT> --remote-port <PORT>
 ```
 
 | پارامتر | توضیحات | الزامی |
 |---------|-------------|----------|
-| `-s` | آدرس سرور (IP:Port) | بله |
-| `-t` | توکن احراز هویت | بله |
-| `-P` | پروتکل (tcp/udp) | بله |
+| `<PROTOCOL>` | زیرفرمان: `tcp`، `udp`، `http`، `stcp` و... | بله |
+| `--server-addr` | آدرس سرور (IP) | بله |
+| `--server-port` | پورت سرور | بله |
+| `--token` | توکن احراز هویت | بله |
 | `--local-port` | پورت محلی برای نمایش | بله |
 | `--remote-port` | پورت راه دور در سرور | بله |
 
@@ -86,7 +87,8 @@ frpc -s <SERVER_ADDR:PORT> -t <TOKEN> -P <PROTOCOL> --local-port <PORT> --remote
 ```bash
 # ایجاد فایل محیطی
 cat > ~/.frp.env <<EOF
-export FRP_SERVER="2.144.21.218:7000"
+export FRP_SERVER_ADDR="2.144.21.218"
+export FRP_SERVER_PORT="7000"
 export FRP_TOKEN="YOUR_TOKEN"
 export FRP_LOCAL_PORT="8080"
 export FRP_REMOTE_PORT="8080"
@@ -97,7 +99,7 @@ EOF
 source ~/.frp.env
 
 # استفاده در دستورات
-frpc -s $FRP_SERVER -t $FRP_TOKEN -P $FRP_PROTOCOL --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
+frpc $FRP_PROTOCOL --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
 ```
 
 ### اسکریپت اتصال پایدار
@@ -106,7 +108,8 @@ frpc -s $FRP_SERVER -t $FRP_TOKEN -P $FRP_PROTOCOL --local-port $FRP_LOCAL_PORT 
 #!/bin/bash
 # frp-tunnel.sh - تونل پایدار با اتصال مجدد خودکار
 
-SERVER="${FRP_SERVER:-2.144.21.218:7000}"
+SERVER_ADDR="${FRP_SERVER_ADDR:-2.144.21.218}"
+SERVER_PORT="${FRP_SERVER_PORT:-7000}"
 TOKEN="${FRP_TOKEN:-YOUR_TOKEN}"
 PROTOCOL="${FRP_PROTOCOL:-tcp}"
 LOCAL_PORT="${FRP_LOCAL_PORT:-8080}"
@@ -114,7 +117,7 @@ REMOTE_PORT="${FRP_REMOTE_PORT:-8080}"
 
 while true; do
     echo "[$(date)] در حال اتصال..."
-    frpc -s $SERVER -t $TOKEN -P $PROTOCOL --local-port $LOCAL_PORT --remote-port $REMOTE_PORT
+    frpc $PROTOCOL --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $LOCAL_PORT --remote-port $REMOTE_PORT
     echo "[$(date)] اتصال قطع شد. اتصال مجدد در ۵ ثانیه..."
     sleep 5
 done
@@ -139,8 +142,9 @@ import signal
 import time
 
 class FRPClient:
-    def __init__(self, server, token, protocol, local_port, remote_port):
-        self.server = server
+    def __init__(self, server_addr, server_port, token, protocol, local_port, remote_port):
+        self.server_addr = server_addr
+        self.server_port = server_port
         self.token = token
         self.protocol = protocol
         self.local_port = local_port
@@ -150,9 +154,10 @@ class FRPClient:
     def start(self):
         """شروع تونل FRP"""
         cmd = [
-            'frpc', '-s', self.server,
-            '-t', self.token,
-            '-P', self.protocol,
+            'frpc', self.protocol,
+            '--server-addr', self.server_addr,
+            '--server-port', str(self.server_port),
+            '--token', self.token,
             '--local-port', str(self.local_port),
             '--remote-port', str(self.remote_port)
         ]
@@ -178,7 +183,8 @@ class FRPClient:
 # استفاده
 if __name__ == "__main__":
     client = FRPClient(
-        server="2.144.21.218:7000",
+        server_addr="2.144.21.218",
+        server_port=7000,
         token="YOUR_TOKEN",
         protocol="tcp",
         local_port=8080,
@@ -199,8 +205,9 @@ if __name__ == "__main__":
 const { spawn } = require('child_process');
 
 class FRPClient {
-    constructor(server, token, protocol, localPort, remotePort) {
-        this.server = server;
+    constructor(serverAddr, serverPort, token, protocol, localPort, remotePort) {
+        this.serverAddr = serverAddr;
+        this.serverPort = serverPort;
         this.token = token;
         this.protocol = protocol;
         this.localPort = localPort;
@@ -211,9 +218,10 @@ class FRPClient {
     start() {
         return new Promise((resolve, reject) => {
             this.process = spawn('frpc', [
-                '-s', this.server,
-                '-t', this.token,
-                '-P', this.protocol,
+                this.protocol,
+                '--server-addr', this.serverAddr,
+                '--server-port', this.serverPort.toString(),
+                '--token', this.token,
                 '--local-port', this.localPort.toString(),
                 '--remote-port', this.remotePort.toString()
             ]);
@@ -242,7 +250,7 @@ class FRPClient {
 }
 
 // استفاده
-const client = new FRPClient('2.144.21.218:7000', 'YOUR_TOKEN', 'tcp', 8080, 8080);
+const client = new FRPClient('2.144.21.218', 7000, 'YOUR_TOKEN', 'tcp', 8080, 8080);
 client.start();
 ```
 
@@ -265,7 +273,7 @@ start_tunnel() {
     local name=$4
     
     echo "شروع $name (محلی:$local_port -> راه دور:$remote_port, $protocol)"
-    frpc -s 2.144.21.218:7000 -t "$FRP_TOKEN" -P $protocol --local-port $local_port --remote-port $remote_port &
+    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $local_port --remote-port $remote_port &
 }
 
 start_all() {
@@ -310,7 +318,7 @@ main() {
     while true; do
         if ! check_tunnel ${LOCAL_PORT:-8080}; then
             echo "[$(date)] تونل قطع است، راه‌اندازی مجدد..."
-            frpc -s 2.144.21.218:7000 -t "$FRP_TOKEN" -P ${PROTOCOL:-tcp} --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
+            frpc ${PROTOCOL:-tcp} --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
             sleep 2
         fi
         sleep 10
@@ -335,7 +343,7 @@ declare -A PORTS=(
 for port in "${!PORTS[@]}"; do
     IFS=':' read -r protocol name <<< "${PORTS[$port]}"
     echo "فوروارد $name (پورت $port, $protocol)"
-    frpc -s 2.144.21.218:7000 -t "$FRP_TOKEN" -P $protocol --local-port $port --remote-port $port &
+    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $port --remote-port $port &
 done
 
 echo "تمام تونل‌ها شروع شدند. برای توقف Ctrl+C را فشار دهید."
@@ -356,10 +364,10 @@ wait
 
 ```bash
 # خوب: استفاده از متغیرهای محیطی
-frpc -s $FRP_SERVER -t $FRP_TOKEN -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port 8080 --remote-port 8080
 
 # بد: توکن هاردکد شده
-frpc -s 2.144.21.218:7000 -t "my-secret-token" -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token" --local-port 8080 --remote-port 8080
 ```
 
 ### قابلیت اطمینان
@@ -393,7 +401,7 @@ frpc -s 2.144.21.218:7000 -t "my-secret-token" -P tcp --local-port 8080 --remote
 
 ```bash
 # فعال‌سازی لاگ‌گیری مفصل
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8080 --log-level debug
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 ```
 
 ### تشخیص شبکه
@@ -425,7 +433,6 @@ frpc [OPTIONS]
       --local-port <LOCAL_PORT>      پورت محلی برای نمایش
       --remote-port <REMOTE_PORT>    پورت راه دور در سرور
   -c, --config <CONFIG>              مسیر فایل پیکربندی
-      --log-level <LOG_LEVEL>        سطح لاگ (trace/debug/info/warn/error)
       --log-file <LOG_FILE>          مسیر فایل لاگ
   -h, --help                         چاپ اطلاعات راهنما
   -V, --version                      چاپ اطلاعات نسخه
@@ -435,7 +442,8 @@ frpc [OPTIONS]
 
 | متغیر | توضیحات | پیش‌فرض |
 |----------|-------------|---------|
-| `FRP_SERVER` | آدرس سرور | هیچ |
+| `FRP_SERVER_ADDR` | آدرس سرور | هیچ |
+| `FRP_SERVER_PORT` | پورت سرور | هیچ |
 | `FRP_TOKEN` | توکن احراز هویت | هیچ |
 | `FRP_PROTOCOL` | نوع پروتکل | tcp |
 | `FRP_LOCAL_PORT` | پورت محلی | هیچ |

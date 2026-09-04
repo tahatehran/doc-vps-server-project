@@ -60,19 +60,19 @@ sudo ufw status
 
 ```bash
 # App 1: Web Server (TCP)
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 3000 --remote-port 8000
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 3000 --remote-port 8000
 
 # App 2: API Server (TCP)
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8001
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8001
 
 # App 3: Database (TCP)
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 5432 --remote-port 8002
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 5432 --remote-port 8002
 
 # App 4: Game Server (UDP)
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P udp --local-port 19132 --remote-port 8003
+frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 19132 --remote-port 8003
 
 # App 5: Admin Panel (TCP)
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 9000 --remote-port 8004
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 9000 --remote-port 8004
 ```
 
 ---
@@ -161,7 +161,7 @@ start_all() {
     for app in "${APPS[@]}"; do
         IFS=':' read -r local_port remote_port protocol name <<< "$app"
         echo "  → $name (local:$local_port → $SERVER:$remote_port, $protocol)"
-        frpc -s $SERVER -t $TOKEN -P $protocol --local-port $local_port --remote-port $remote_port &
+        frpc $protocol --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $local_port --remote-port $remote_port &
     done
     echo "All 5 tunnels started!"
 }

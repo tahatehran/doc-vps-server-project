@@ -48,10 +48,10 @@ scoop install frp
 
 ```bash
 # TCP connection
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 
 # UDP connection
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P udp --local-port 8081 --remote-port 8081
+frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8081 --remote-port 8081
 ```
 
 That's it! Your local port is now accessible through the server.
@@ -64,10 +64,10 @@ That's it! Your local port is now accessible through the server.
 
 ```bash
 # Basic format
-frpc -s <SERVER:PORT> -t <TOKEN> -P <PROTOCOL> --local-port <PORT> --remote-port <PORT>
+frpc <PROTOCOL> --server-addr <SERVER_ADDR> --server-port <PORT> --token <TOKEN> --local-port <PORT> --remote-port <PORT>
 
 # Example: Share your local web app running on port 3000
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 3000 --remote-port 3000
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 3000 --remote-port 3000
 ```
 
 ### Understanding the Command
@@ -75,9 +75,10 @@ frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 3000 --remote-port 3
 | Part | What It Means | Example |
 |------|---------------|---------|
 | `frpc` | Start FRP client | `frpc` |
-| `-s` | Server address | `-s 2.144.21.218:7000` |
-| `-t` | Authentication token | `-t YOUR_TOKEN` |
-| `-P` | Protocol (tcp/udp) | `-P tcp` |
+| `tcp` (subcommand) | Protocol to tunnel | `tcp`, `udp`, `http`, ... |
+| `--server-addr` | Server address | `--server-addr 2.144.21.218` |
+| `--server-port` | Server port | `--server-port 7000` |
+| `--token` | Authentication token | `--token YOUR_TOKEN` |
 | `--local-port` | Your local port | `--local-port 8080` |
 | `--remote-port` | Server port | `--remote-port 8080` |
 
@@ -89,28 +90,28 @@ frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 3000 --remote-port 3
 
 ```bash
 # If you have a website running on localhost:3000
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 3000 --remote-port 3000
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 3000 --remote-port 3000
 ```
 
 ### 2. Share a Game Server (UDP)
 
 ```bash
 # Share your local game server
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P udp --local-port 19132 --remote-port 19132
+frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 19132 --remote-port 19132
 ```
 
 ### 3. Share a Database (TCP)
 
 ```bash
 # Share your local PostgreSQL database
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 5432 --remote-port 5432
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 5432 --remote-port 5432
 ```
 
 ### 4. Share Any Service
 
 ```bash
 # Replace 8080 with any port number
-frpc -s 2.144.21.218:7000 -t YOUR_TOKEN -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 ```
 
 ---

@@ -48,10 +48,10 @@ scoop install frp
 
 ```bash
 # اتصال TCP
-frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 8080 --remote-port 8080
 
 # اتصال UDP
-frpc -s 2.144.21.218:7000 -t توکن_شما -P udp --local-port 8081 --remote-port 8081
+frpc udp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 8081 --remote-port 8081
 ```
 
 همین! پورت محلی شما اکنون از طریق سرور قابل دسترسی است.
@@ -64,10 +64,10 @@ frpc -s 2.144.21.218:7000 -t توکن_شما -P udp --local-port 8081 --remote-p
 
 ```bash
 # فرمت پایه
-frpc -s <سرور:پورت> -t <توکن> -P <پروتکل> --local-port <پورت> --remote-port <پورت>
+frpc <پروتکل> --server-addr <آدرس_سرور> --server-port <پورت_سرور> --token <توکن> --local-port <پورت_محلی> --remote-port <پورت_راه_دور>
 
 # مثال: به اشتراک‌گذاری برنامه وب محلی روی پورت 3000
-frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 3000 --remote-port 3000
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 3000 --remote-port 3000
 ```
 
 ### درک دستور
@@ -75,9 +75,10 @@ frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 3000 --remote-p
 | بخش | معنی | مثال |
 |------|------|---------|
 | `frpc` | شروع کلاینت FRP | `frpc` |
-| `-s` | آدرس سرور | `-s 2.144.21.218:7000` |
-| `-t` | توکن احراز هویت | `-t توکن_شما` |
-| `-P` | پروتکل (tcp/udp) | `-P tcp` |
+| `tcp` (زیرفرمان) | پروتکل تونل | `tcp`، `udp`، `http` و... |
+| `--server-addr` | آدرس سرور | `--server-addr 2.144.21.218` |
+| `--server-port` | پورت سرور | `--server-port 7000` |
+| `--token` | توکن احراز هویت | `--token توکن_شما` |
 | `--local-port` | پورت محلی شما | `--local-port 8080` |
 | `--remote-port` | پورت سرور | `--remote-port 8080` |
 
@@ -89,28 +90,28 @@ frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 3000 --remote-p
 
 ```bash
 # اگر وب‌سایتی روی localhost:3000 اجرا می‌شود
-frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 3000 --remote-port 3000
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 3000 --remote-port 3000
 ```
 
 ### ۲. به اشتراک‌گذاری سرور بازی (UDP)
 
 ```bash
 # به اشتراک‌گذاری سرور بازی محلی
-frpc -s 2.144.21.218:7000 -t توکن_شما -P udp --local-port 19132 --remote-port 19132
+frpc udp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 19132 --remote-port 19132
 ```
 
 ### ۳. به اشتراک‌گذاری دیتابیس (TCP)
 
 ```bash
 # به اشتراک‌گذاری دیتابیس PostgreSQL محلی
-frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 5432 --remote-port 5432
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 5432 --remote-port 5432
 ```
 
 ### ۴. به اشتراک‌گذاری هر سرویسی
 
 ```bash
 # 8080 را با هر شماره پورتی جایگزین کنید
-frpc -s 2.144.21.218:7000 -t توکن_شما -P tcp --local-port 8080 --remote-port 8080
+frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 8080 --remote-port 8080
 ```
 
 ---
