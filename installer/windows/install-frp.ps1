@@ -279,9 +279,14 @@ function Connect-ToServer {
     $serverPort = Read-Host "Server Port [7000]"
     if ([string]::IsNullOrWhiteSpace($serverPort)) { $serverPort = '7000' }
 
-    $authToken = Read-Host "Auth Token"
+    $authToken = Read-Host "Auth Token (the auth.token from the server's frps.toml - ask the server admin)"
     if ([string]::IsNullOrWhiteSpace($authToken)) {
         Write-Host "Token cannot be empty." -ForegroundColor Red
+        exit 1
+    }
+    if ($authToken -in @('YOUR_TOKEN', 'توکن_شما', 'your-token', 'changeme')) {
+        Write-Host "That is a placeholder from the docs, not a real token." -ForegroundColor Red
+        Write-Host "Ask the server admin for the auth.token value in the server's frps.toml." -ForegroundColor Yellow
         exit 1
     }
 
@@ -353,6 +358,38 @@ remotePort = $remotePort
         return
     }
     Write-Host "Configuration is valid." -ForegroundColor Green
+
+    # Live 6s foreground test so the user sees the REAL server response
+    # (wrong token, duplicate proxy name, unreachable server) before a
+    # broken service gets installed
+    Write-Host "Testing connection to server (6 seconds)..." -ForegroundColor Yellow
+    $testLog = "$env:TEMP\frpc-test.log"
+    $testProc = Start-Process -FilePath "$INSTALL_DIR\frpc.exe" -ArgumentList "-c `"$CONFIG_FILE`"" -NoNewWindow -PassThru -RedirectStandardOutput $testLog -RedirectStandardError "$env:TEMP\frpc-test.err"
+    Start-Sleep -Seconds 6
+    if (-not $testProc.HasExited) {
+        Stop-Process -Id $testProc.Id -Force -ErrorAction SilentlyContinue
+        Write-Host "Connection test succeeded - login accepted by server." -ForegroundColor Green
+    } else {
+        $testOutput = (Get-Content $testLog, "$env:TEMP\frpc-test.err" -ErrorAction SilentlyContinue) -join "`n"
+        if ($testOutput -match "token .*doesn.t match|authentication failed|token in login") {
+            Write-Host "LOGIN FAILED: the auth token is wrong." -ForegroundColor Red
+            Write-Host "Get the real token from the server admin (auth.token in the server's frps.toml)." -ForegroundColor Yellow
+            return
+        }
+        if ($testOutput -match "proxy .*already|proxy name") {
+            Write-Host "LOGIN FAILED: this proxy name is already used on the server." -ForegroundColor Red
+            Write-Host "Re-run option 4 and choose a different Proxy Name." -ForegroundColor Yellow
+            return
+        }
+        if ($testOutput -match "connection refused|i/o timeout|dial tcp") {
+            Write-Host "LOGIN FAILED: cannot reach the server." -ForegroundColor Red
+            Write-Host "Check Server Address/Port and that the FRP server is running." -ForegroundColor Yellow
+            return
+        }
+        Write-Host "frpc exited during the test:" -ForegroundColor Red
+        Write-Host $testOutput -ForegroundColor Red
+        return
+    }
 
     $service = Get-Service -Name $SERVICE_NAME -ErrorAction SilentlyContinue
     if ($service) {

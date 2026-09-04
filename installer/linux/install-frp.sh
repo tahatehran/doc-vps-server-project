@@ -175,11 +175,18 @@ connect_to_server() {
     read -rp "Server Port [7000]: " server_port
     server_port=${server_port:-7000}
 
-    read -rp "Auth Token: " auth_token
+    read -rp "Auth Token (the auth.token from the server's frps.toml - ask the server admin): " auth_token
     if [[ -z "$auth_token" ]]; then
         echo -e "${RED}Token cannot be empty.${NC}"
         exit 1
     fi
+    case "$auth_token" in
+        YOUR_TOKEN|توکن_شما|your-token|changeme)
+            echo -e "${RED}That is a placeholder from the docs, not a real token.${NC}"
+            echo -e "${YELLOW}Ask the server admin for the auth.token value in the server's frps.toml.${NC}"
+            exit 1
+            ;;
+    esac
 
     read -rp "Local Port (your app port): " local_port
     if [[ -z "$local_port" ]]; then
@@ -238,6 +245,36 @@ EOF
     chmod 600 "$config_file"
 
     echo -e "${GREEN}Configuration saved to ${config_file}${NC}"
+
+    # Live 6s foreground test so the user sees the REAL server response
+    # (wrong token, duplicate proxy name, unreachable server) before a
+    # broken service gets installed
+    echo -e "${YELLOW}Testing connection to server (6 seconds)...${NC}"
+    local test_log
+    test_log=$(mktemp)
+    timeout 6 "$INSTALL_DIR/frpc" -c "$config_file" > "$test_log" 2>&1 || true
+    if grep -Eq "token .*doesn.t match|authentication failed|token in login" "$test_log"; then
+        echo -e "${RED}LOGIN FAILED: the auth token is wrong.${NC}"
+        echo -e "${YELLOW}Get the real token from the server admin (auth.token in the server's frps.toml).${NC}"
+        grep -E "ERROR|WARN" "$test_log" | head -3 || true
+        rm -f "$test_log"
+        return
+    elif grep -Eq "proxy .*already|proxy name" "$test_log"; then
+        echo -e "${RED}LOGIN FAILED: this proxy name is already used on the server.${NC}"
+        echo -e "${YELLOW}Re-run option 4 and choose a different Proxy Name.${NC}"
+        grep -E "ERROR|WARN" "$test_log" | head -3 || true
+        rm -f "$test_log"
+        return
+    elif grep -Eq "connection refused|i/o timeout|dial tcp" "$test_log"; then
+        echo -e "${RED}LOGIN FAILED: cannot reach the server.${NC}"
+        echo -e "${YELLOW}Check Server Address/Port and that the FRP server is running.${NC}"
+        grep -E "ERROR|WARN" "$test_log" | head -3 || true
+        rm -f "$test_log"
+        return
+    elif grep -qE "try to connect|login to server success|start login success" "$test_log"; then
+        echo -e "${GREEN}Connection test succeeded - login accepted by server.${NC}"
+    fi
+    rm -f "$test_log"
 
     if [[ -f "$SERVICE_FILE" ]]; then
         echo -e "${YELLOW}Restarting frp-client service...${NC}"

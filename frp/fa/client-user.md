@@ -124,7 +124,10 @@ frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --tok
 | مشکل | راه‌حل |
 |---------|----------|
 | `Connection refused` | بررسی کنید که سرور آنلاین باشد |
+| `token in login doesn't match token from configuration` | توکن اشتباه است — توکن واقعی (`auth.token`) را از مدیر سرور بگیرید. هرگز متن نمونه‌ی `YOUR_TOKEN` را استفاده نکنید |
 | `Authentication failed` | تأیید کنید که توکن شما درست است |
+| `name should not be empty` | فلگ `--proxy-name <نام>` را به دستور اضافه کنید |
+| `proxy name ... already exists` | با مقدار متفاوتی برای `--proxy-name` دوباره اجرا کنید |
 | `Port already in use` | پورت محلی متفاوتی انتخاب کنید |
 | `Command not found` | FRP را به درستی نصب کنید |
 

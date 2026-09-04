@@ -124,7 +124,10 @@ frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --tok
 | Problem | Solution |
 |---------|----------|
 | `Connection refused` | Check if the server is online |
+| `token in login doesn't match token from configuration` | The token is wrong — get the real `auth.token` from the server admin. Never use the docs placeholder `YOUR_TOKEN` |
 | `Authentication failed` | Verify your token is correct |
+| `name should not be empty` | Add `--proxy-name <name>` to the command |
+| `proxy name ... already exists` | Re-run with a different `--proxy-name` value |
 | `Port already in use` | Choose a different local port |
 | `Command not found` | Install FRP properly |
 
