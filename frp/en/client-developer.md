@@ -54,10 +54,10 @@ scoop install frp
 
 ```bash
 # Basic TCP connection
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 
 # UDP connection
-frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8081 --remote-port 8081
+frpc udp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8081 --remote-port 8081
 
 # Using config file
 frpc -c /etc/frp/frpc.ini
@@ -66,12 +66,13 @@ frpc -c /etc/frp/frpc.ini
 ### Command Syntax
 
 ```bash
-frpc <PROTOCOL> --server-addr <SERVER_ADDR> --server-port <PORT> --token <TOKEN> --local-port <PORT> --remote-port <PORT>
+frpc <PROTOCOL> --proxy-name <NAME> --server-addr <SERVER_ADDR> --server-port <PORT> --token <TOKEN> --local-port <PORT> --remote-port <PORT>
 ```
 
 | Parameter | Description | Required |
 |-----------|-------------|----------|
 | `<PROTOCOL>` | Subcommand: `tcp`, `udp`, `http`, `stcp`, ... | Yes |
+| `--proxy-name` | Unique proxy name | Yes |
 | `--server-addr` | Server address (IP) | Yes |
 | `--server-port` | Server port | Yes |
 | `--token` | Authentication token | Yes |
@@ -99,7 +100,7 @@ EOF
 source ~/.frp.env
 
 # Use in commands
-frpc $FRP_PROTOCOL --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
+frpc $FRP_PROTOCOL --proxy-name my-app --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
 ```
 
 ### Persistent Connection Script
@@ -117,7 +118,7 @@ REMOTE_PORT="${FRP_REMOTE_PORT:-8080}"
 
 while true; do
     echo "[$(date)] Connecting..."
-    frpc $PROTOCOL --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $LOCAL_PORT --remote-port $REMOTE_PORT    echo "[$(date)] Disconnected. Reconnecting in 5s..."
+    frpc $PROTOCOL --proxy-name my-app --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $LOCAL_PORT --remote-port $REMOTE_PORT    echo "[$(date)] Disconnected. Reconnecting in 5s..."
     sleep 5
 done
 ```
@@ -154,6 +155,7 @@ class FRPClient:
         """Start the FRP tunnel"""
         cmd = [
             'frpc', self.protocol,
+            '--proxy-name', 'my-app',
             '--server-addr', self.server_addr,
             '--server-port', str(self.server_port),
             '--token', self.token,
@@ -218,6 +220,7 @@ class FRPClient {
         return new Promise((resolve, reject) => {
             this.process = spawn('frpc', [
                 this.protocol,
+                '--proxy-name', 'my-app',
                 '--server-addr', this.serverAddr,
                 '--server-port', this.serverPort.toString(),
                 '--token', this.token,
@@ -272,7 +275,7 @@ start_tunnel() {
     local name=$4
     
     echo "Starting $name (local:$local_port -> remote:$remote_port, $protocol)"
-    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $local_port --remote-port $remote_port &
+    frpc $protocol --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $local_port --remote-port $remote_port &
 }
 
 start_all() {
@@ -317,7 +320,7 @@ main() {
     while true; do
         if ! check_tunnel ${LOCAL_PORT:-8080}; then
             echo "[$(date)] Tunnel down, restarting..."
-            frpc ${PROTOCOL:-tcp} --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
+            frpc ${PROTOCOL:-tcp} --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
             sleep 2
         fi
         sleep 10
@@ -342,7 +345,7 @@ declare -A PORTS=(
 for port in "${!PORTS[@]}"; do
     IFS=':' read -r protocol name <<< "${PORTS[$port]}"
     echo "Forwarding $name (port $port, $protocol)"
-    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $port --remote-port $port &
+    frpc $protocol --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $port --remote-port $port &
 done
 
 echo "All tunnels started. Press Ctrl+C to stop."
@@ -363,10 +366,10 @@ wait
 
 ```bash
 # Good: Use environment variables
-frpc tcp --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port 8080 --remote-port 8080
 
 # Bad: Hardcoded token
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token" --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token" --local-port 8080 --remote-port 8080
 ```
 
 ### Reliability
@@ -400,7 +403,7 @@ frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token"
 
 ```bash
 # Enable verbose logging
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 ```
 
 ### Network Diagnostics

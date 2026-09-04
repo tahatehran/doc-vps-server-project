@@ -60,19 +60,19 @@ sudo ufw status
 
 ```bash
 # اپ ۱: وب سرور (TCP)
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 3000 --remote-port 8000
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 3000 --remote-port 8000
 
 # اپ ۲: API سرور (TCP)
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8001
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8001
 
 # اپ ۳: دیتابیس (TCP)
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 5432 --remote-port 8002
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 5432 --remote-port 8002
 
 # اپ ۴: سرور بازی (UDP)
-frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 19132 --remote-port 8003
+frpc udp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 19132 --remote-port 8003
 
 # اپ ۵: پنل مدیریت (TCP)
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 9000 --remote-port 8004
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 9000 --remote-port 8004
 ```
 
 ---
@@ -161,7 +161,7 @@ start_all() {
     for app in "${APPS[@]}"; do
         IFS=':' read -r local_port remote_port protocol name <<< "$app"
         echo "  → $name (محلی:$local_port → $SERVER:$remote_port, $protocol)"
-        frpc $protocol --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $local_port --remote-port $remote_port &
+        frpc $protocol --proxy-name my-app --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $local_port --remote-port $remote_port &
     done
     echo "تمام ۵ تونل شروع شدند!"
 }

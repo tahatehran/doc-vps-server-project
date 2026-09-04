@@ -101,10 +101,10 @@ doc-vps-server-project/
 
 ```bash
 # اتصال TCP پایه
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 8080 --remote-port 8080
 
 # اتصال UDP
-frpc udp --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 8080 --remote-port 8080
+frpc udp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token توکن_شما --local-port 8080 --remote-port 8080
 ```
 
 > ⚠️ **توجه:** سرور در حال حاضر آفلاین است. برای دسترسی با مدیر سرور تماس بگیرید.

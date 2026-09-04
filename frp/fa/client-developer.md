@@ -54,10 +54,10 @@ scoop install frp
 
 ```bash
 # اتصال TCP پایه
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 
 # اتصال UDP
-frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8081 --remote-port 8081
+frpc udp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8081 --remote-port 8081
 
 # استفاده از فایل پیکربندی
 frpc -c /etc/frp/frpc.ini
@@ -66,12 +66,13 @@ frpc -c /etc/frp/frpc.ini
 ### نحوه استفاده
 
 ```bash
-frpc <PROTOCOL> --server-addr <SERVER_ADDR> --server-port <PORT> --token <TOKEN> --local-port <PORT> --remote-port <PORT>
+frpc <PROTOCOL> --proxy-name <NAME> --server-addr <SERVER_ADDR> --server-port <PORT> --token <TOKEN> --local-port <PORT> --remote-port <PORT>
 ```
 
 | پارامتر | توضیحات | الزامی |
 |---------|-------------|----------|
 | `<PROTOCOL>` | زیرفرمان: `tcp`، `udp`، `http`، `stcp` و... | بله |
+| `--proxy-name` | نام یکتای پروکسی | بله |
 | `--server-addr` | آدرس سرور (IP) | بله |
 | `--server-port` | پورت سرور | بله |
 | `--token` | توکن احراز هویت | بله |
@@ -99,7 +100,7 @@ EOF
 source ~/.frp.env
 
 # استفاده در دستورات
-frpc $FRP_PROTOCOL --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
+frpc $FRP_PROTOCOL --proxy-name my-app --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port $FRP_LOCAL_PORT --remote-port $FRP_REMOTE_PORT
 ```
 
 ### اسکریپت اتصال پایدار
@@ -117,7 +118,7 @@ REMOTE_PORT="${FRP_REMOTE_PORT:-8080}"
 
 while true; do
     echo "[$(date)] در حال اتصال..."
-    frpc $PROTOCOL --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $LOCAL_PORT --remote-port $REMOTE_PORT
+    frpc $PROTOCOL --proxy-name my-app --server-addr "$SERVER_ADDR" --server-port "$SERVER_PORT" --token "$TOKEN" --local-port $LOCAL_PORT --remote-port $REMOTE_PORT
     echo "[$(date)] اتصال قطع شد. اتصال مجدد در ۵ ثانیه..."
     sleep 5
 done
@@ -155,6 +156,7 @@ class FRPClient:
         """شروع تونل FRP"""
         cmd = [
             'frpc', self.protocol,
+            '--proxy-name', 'my-app',
             '--server-addr', self.server_addr,
             '--server-port', str(self.server_port),
             '--token', self.token,
@@ -219,6 +221,7 @@ class FRPClient {
         return new Promise((resolve, reject) => {
             this.process = spawn('frpc', [
                 this.protocol,
+                '--proxy-name', 'my-app',
                 '--server-addr', this.serverAddr,
                 '--server-port', this.serverPort.toString(),
                 '--token', this.token,
@@ -273,7 +276,7 @@ start_tunnel() {
     local name=$4
     
     echo "شروع $name (محلی:$local_port -> راه دور:$remote_port, $protocol)"
-    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $local_port --remote-port $remote_port &
+    frpc $protocol --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $local_port --remote-port $remote_port &
 }
 
 start_all() {
@@ -318,7 +321,7 @@ main() {
     while true; do
         if ! check_tunnel ${LOCAL_PORT:-8080}; then
             echo "[$(date)] تونل قطع است، راه‌اندازی مجدد..."
-            frpc ${PROTOCOL:-tcp} --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
+            frpc ${PROTOCOL:-tcp} --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port ${LOCAL_PORT:-8080} --remote-port ${REMOTE_PORT:-8080} &
             sleep 2
         fi
         sleep 10
@@ -343,7 +346,7 @@ declare -A PORTS=(
 for port in "${!PORTS[@]}"; do
     IFS=':' read -r protocol name <<< "${PORTS[$port]}"
     echo "فوروارد $name (پورت $port, $protocol)"
-    frpc $protocol --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $port --remote-port $port &
+    frpc $protocol --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "$FRP_TOKEN" --local-port $port --remote-port $port &
 done
 
 echo "تمام تونل‌ها شروع شدند. برای توقف Ctrl+C را فشار دهید."
@@ -364,10 +367,10 @@ wait
 
 ```bash
 # خوب: استفاده از متغیرهای محیطی
-frpc tcp --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr "$FRP_SERVER_ADDR" --server-port "$FRP_SERVER_PORT" --token "$FRP_TOKEN" --local-port 8080 --remote-port 8080
 
 # بد: توکن هاردکد شده
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token" --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token" --local-port 8080 --remote-port 8080
 ```
 
 ### قابلیت اطمینان
@@ -401,7 +404,7 @@ frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token "my-secret-token"
 
 ```bash
 # فعال‌سازی لاگ‌گیری مفصل
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 ```
 
 ### تشخیص شبکه

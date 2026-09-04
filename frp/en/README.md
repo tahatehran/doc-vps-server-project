@@ -101,10 +101,10 @@ For regular users who want to connect to the FRP server.
 
 ```bash
 # Basic TCP connection
-frpc tcp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
+frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 
 # UDP connection
-frpc udp --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
+frpc udp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --token YOUR_TOKEN --local-port 8080 --remote-port 8080
 ```
 
 > ⚠️ **Note:** The server is currently offline. Contact the administrator for access.
