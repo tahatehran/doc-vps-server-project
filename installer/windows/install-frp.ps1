@@ -137,6 +137,9 @@ serverPort = 7000
 auth.method = "token"
 auth.token = "YOUR_TOKEN_HERE"
 
+# default 1500 silently truncates larger datagrams; raise to carry big replies
+udpPacketSize = 65535
+
 transport.protocol = "tcp"
 transport.poolCount = 5
 transport.tcpMux = true
@@ -320,6 +323,10 @@ serverAddr = "$serverAddr"
 serverPort = $serverPort
 auth.method = "token"
 auth.token = "$authToken"
+
+# default 1500 silently truncates larger datagrams; raise to carry big replies
+# (hard ceiling ~7.6KB per datagram due to frp's internal message limit)
+udpPacketSize = 65535
 
 transport.protocol = "tcp"
 transport.poolCount = 5

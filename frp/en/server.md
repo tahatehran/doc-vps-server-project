@@ -122,6 +122,8 @@ log_level = info
 log_max_days = 3
 authentication_timeout = 900
 allow_ports = 8000-9000
+# required for UDP tunnels; the default 1500 silently truncates datagrams
+udp_packet_size = 65535
 EOF
 ```
 
@@ -133,6 +135,10 @@ serverAddr = "2.144.21.218"
 serverPort = 7000
 auth.method = "token"
 auth.token = "YOUR_GENERATED_TOKEN"
+
+# required for UDP tunnels carrying replies larger than 1500 bytes;
+# server must also have udp_packet_size = 65535 in frps.ini
+udpPacketSize = 65535
 
 transport.protocol = "tcp"
 transport.poolCount = 5

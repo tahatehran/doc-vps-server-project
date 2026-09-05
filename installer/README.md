@@ -95,6 +95,10 @@ serverPort = 7000
 auth.method = "token"
 auth.token = "YOUR_TOKEN"
 
+# required for UDP tunnels carrying replies larger than 1500 bytes;
+# server must also have udp_packet_size = 65535 in frps.ini
+udpPacketSize = 65535
+
 transport.protocol = "tcp"
 transport.poolCount = 5
 transport.tcpMux = true

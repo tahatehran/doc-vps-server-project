@@ -128,6 +128,8 @@ frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --tok
 | `Authentication failed` | تأیید کنید که توکن شما درست است |
 | `name should not be empty` | فلگ `--proxy-name <نام>` را به دستور اضافه کنید |
 | `proxy name ... already exists` | با مقدار متفاوتی برای `--proxy-name` دوباره اجرا کنید |
+| `message length exceed the limit` | دیتاگرام UDP شما از سقف داخلی frp (~7.6KB) بزرگ‌تر است (پیلود در پیام JSON تا 10KB باد می‌کند). داده را کوچک‌تر کنید یا برای انتقال حجیم از تونل TCP استفاده کنید |
+| پاسخ‌های UDP بزرگ‌تر از 1500 بایت بریده می‌رسند | `udpPacketSize = 65535` را به frpc.toml و `udp_packet_size = 65535` را به frps.ini سرور اضافه کنید و هر دو را ری‌استارت کنید |
 | `Port already in use` | پورت محلی متفاوتی انتخاب کنید |
 | `Command not found` | FRP را به درستی نصب کنید |
 

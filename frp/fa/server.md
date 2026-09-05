@@ -101,6 +101,8 @@ log_level = info
 log_max_days = 3
 authentication_timeout = 900
 allow_ports = 8000-9000
+# برای تونل‌های UDP ضروری است؛ پیش‌فرض 1500 دیتاگرام‌های بزرگ‌تر را بی‌صدا برش می‌زند
+udp_packet_size = 65535
 EOF
 ```
 
@@ -112,6 +114,9 @@ sudo tee /etc/frp/frpc.ini <<EOF
 server_addr = 2.144.21.218
 server_port = 7000
 token = YOUR_GENERATED_TOKEN
+# برای تونل‌های UDP که پاسخ‌های بزرگ‌تر از 1500 بایت دارند ضروری است؛
+# سرور هم باید udp_packet_size = 65535 در frps.ini داشته باشد
+udp_packet_size = 65535
 log_file = /var/log/frp/frpc.log
 log_level = info
 log_max_days = 3

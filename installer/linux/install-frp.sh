@@ -218,6 +218,10 @@ serverPort = ${server_port}
 auth.method = "token"
 auth.token = "${auth_token}"
 
+# default 1500 silently truncates larger datagrams; raise to carry big replies
+# (hard ceiling ~7.6KB per datagram due to frp's internal message limit)
+udpPacketSize = 65535
+
 transport.protocol = "tcp"
 transport.poolCount = 5
 transport.tcpMux = true
