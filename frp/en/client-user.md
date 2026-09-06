@@ -128,8 +128,9 @@ frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --tok
 | `Authentication failed` | Verify your token is correct |
 | `name should not be empty` | Add `--proxy-name <name>` to the command |
 | `proxy name ... already exists` | Re-run with a different `--proxy-name` value |
-| `message length exceed the limit` | Your UDP datagram exceeds frp's internal ~7.6KB message cap (payload is base64-inflated to a 10KB JSON message). Split the data or use a TCP tunnel for large transfers |
+| `message length exceed the limit` | Your UDP datagram exceeds the ~7.6KB cap of the default (v1/JSON) wire protocol. Add `transport.wireProtocol = "v2"` to frpc.toml to lift it to ~65507 bytes, or split the data / use TCP |
 | UDP replies >1500 bytes arrive truncated | Add `udpPacketSize = 65535` to frpc.toml AND `udp_packet_size = 65535` to the server's frps.ini, then restart both |
+| Need UDP datagrams up to 64KB | Set `udpPacketSize = 65535` + `transport.wireProtocol = "v2"` in frpc.toml (server frps 0.71+ negotiates v2 automatically). Hard IP ceiling is 65507 bytes — larger transfers belong on a TCP tunnel |
 | `Port already in use` | Choose a different local port |
 | `Command not found` | Install FRP properly |
 

@@ -140,6 +140,9 @@ auth.token = "YOUR_GENERATED_TOKEN"
 # server must also have udp_packet_size = 65535 in frps.ini
 udpPacketSize = 65535
 
+# binary wire protocol: lifts the UDP datagram ceiling from ~7.6KB to ~65507 bytes
+transport.wireProtocol = "v2"
+
 transport.protocol = "tcp"
 transport.poolCount = 5
 transport.tcpMux = true

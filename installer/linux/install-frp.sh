@@ -219,9 +219,11 @@ auth.method = "token"
 auth.token = "${auth_token}"
 
 # default 1500 silently truncates larger datagrams; raise to carry big replies
-# (hard ceiling ~7.6KB per datagram due to frp's internal message limit)
 udpPacketSize = 65535
 
+# binary wire protocol: without it UDP datagrams cap at ~7.6KB (JSON codec);
+# with v2 they pass through at full size up to ~65507 bytes
+transport.wireProtocol = "v2"
 transport.protocol = "tcp"
 transport.poolCount = 5
 transport.tcpMux = true

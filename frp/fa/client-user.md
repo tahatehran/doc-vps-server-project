@@ -128,8 +128,9 @@ frpc tcp --proxy-name my-app --server-addr 2.144.21.218 --server-port 7000 --tok
 | `Authentication failed` | تأیید کنید که توکن شما درست است |
 | `name should not be empty` | فلگ `--proxy-name <نام>` را به دستور اضافه کنید |
 | `proxy name ... already exists` | با مقدار متفاوتی برای `--proxy-name` دوباره اجرا کنید |
-| `message length exceed the limit` | دیتاگرام UDP شما از سقف داخلی frp (~7.6KB) بزرگ‌تر است (پیلود در پیام JSON تا 10KB باد می‌کند). داده را کوچک‌تر کنید یا برای انتقال حجیم از تونل TCP استفاده کنید |
+| `message length exceed the limit` | دیتاگرام UDP شما از سقف ~7.6KB پروتکل پیش‌فرض (v1/JSON) بزرگ‌تر است. با افزودن `transport.wireProtocol = "v2"` به frpc.toml سقف تا ~65507 بایت بالا می‌رود، یا داده را کوچک‌تر کنید / از TCP استفاده کنید |
 | پاسخ‌های UDP بزرگ‌تر از 1500 بایت بریده می‌رسند | `udpPacketSize = 65535` را به frpc.toml و `udp_packet_size = 65535` را به frps.ini سرور اضافه کنید و هر دو را ری‌استارت کنید |
+| نیاز به دیتاگرام UDP تا 64KB | در frpc.toml هر دو کلید `udpPacketSize = 65535` و `transport.wireProtocol = "v2"` را بگذارید (سرور frps نسخه 0.71+ به‌طور خودکار v2 را مذاکره می‌کند). سقف مطلق IP برابر 65507 بایت است — انتقال‌های بزرگ‌تر جایزش تونل TCP است |
 | `Port already in use` | پورت محلی متفاوتی انتخاب کنید |
 | `Command not found` | FRP را به درستی نصب کنید |
 
