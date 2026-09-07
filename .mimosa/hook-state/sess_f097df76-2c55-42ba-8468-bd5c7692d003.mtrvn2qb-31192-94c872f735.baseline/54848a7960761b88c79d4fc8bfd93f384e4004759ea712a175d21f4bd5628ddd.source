@@ -206,9 +206,6 @@ connect_to_server() {
     read -rp "Proxy Type [tcp/http]: " proxy_type
     proxy_type=${proxy_type:-tcp}
 
-    # random password for the local client admin UI (http://127.0.0.1:7400)
-    admin_pwd=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 10)
-
     echo ""
     echo -e "${YELLOW}Creating configuration...${NC}"
 
@@ -236,12 +233,6 @@ transport.heartbeatTimeout = 90
 log.level = "info"
 log.maxDays = 3
 
-# live client admin UI on this machine: http://127.0.0.1:7400
-webServer.addr = "127.0.0.1"
-webServer.port = 7400
-webServer.user = "admin"
-webServer.password = "${admin_pwd}"
-
 [[proxies]]
 name = "${proxy_name}"
 type = "${proxy_type}"
@@ -260,7 +251,6 @@ EOF
     chmod 600 "$config_file"
 
     echo -e "${GREEN}Configuration saved to ${config_file}${NC}"
-    echo -e "${BLUE}Client Admin UI: http://127.0.0.1:7400  (user: admin, password: ${admin_pwd})${NC}"
 
     # Live 6s foreground test so the user sees the REAL server response
     # (wrong token, duplicate proxy name, unreachable server) before a

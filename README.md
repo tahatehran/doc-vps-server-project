@@ -35,7 +35,7 @@ This repository contains comprehensive documentation for managing secure tunnel 
 ║  🚪 FRP Port     : 7000 (Main)                               ║
 ║  📊 Dashboard    : 7500 (Server Panel)                       ║
 ║  🖥️  Client UI   : 7400 (Client Admin)                       ║
-║  📈 Status Page  : 8090 (Public Status)                      ║
+║  🛡 Ban Engine   : fail2ban (SSH + Scan)                     ║
 ║  🔑 Token Auth   : Enabled                                   ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  🌐 HTTP Proxy   : 80 (vhost)                                ║
@@ -51,8 +51,6 @@ This repository contains comprehensive documentation for managing secure tunnel 
 | **FRP Server** | 7000 | TCP | 🟢 Active |
 | **Server Dashboard** | 7500 | HTTP | 🟢 Active |
 | **Client Admin UI** | 7400 | HTTP | 🟢 Active |
-| **Status Page** | 8090 | HTTP | 🟢 Active |
-| **SSH Demo** | 8022 | TCP | 🟢 Active |
 
 ---
 
@@ -259,7 +257,7 @@ We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for
 ║  🚪 پورت FRP     : 7000 (اصلی)                               ║
 ║  📊 داشبورد      : 7500 (پنل سرور)                           ║
 ║  🖥️  Client UI   : 7400 (مدیریت کلاینت)                      ║
-║  📈 صفحه وضعیت  : 8090 (وضعیت عمومی)                         ║
+║  🛡 موتور بن    : fail2ban (SSH + اسکن)                      ║
 ║  🔑 احراز هویت   : Token                                     ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  🌐 پروکسی HTTP  : 80 (vhost)                                ║
@@ -275,8 +273,6 @@ We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for
 | **سرور FRP** | 7000 | TCP | 🟢 فعال |
 | **داشبورد سرور** | 7500 | HTTP | 🟢 فعال |
 | **رابط کاربری کلاینت** | 7400 | HTTP | 🟢 فعال |
-| **صفحه وضعیت** | 8090 | HTTP | 🟢 فعال |
-| **دمو SSH** | 8022 | TCP | 🟢 فعال |
 
 ---
 

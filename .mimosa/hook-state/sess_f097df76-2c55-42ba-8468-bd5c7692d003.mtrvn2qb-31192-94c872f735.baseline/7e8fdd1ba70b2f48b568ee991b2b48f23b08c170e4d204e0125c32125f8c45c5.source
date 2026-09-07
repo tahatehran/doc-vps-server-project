@@ -20,14 +20,11 @@ import re
 import subprocess
 import threading
 import time
-import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 FRPS_INI = '/etc/frp/frps.ini'
 FRPS_API = 'http://127.0.0.1:7500'
-# SSRF guard: the frps admin API is only ever queried on the local loopback
-ALLOWED_API_HOSTS = {'127.0.0.1'}
 TICK = 2          # seconds between snapshots
 MAX_HISTORY = 90  # samples kept for the sparkline
 
@@ -62,11 +59,7 @@ AUTH = base64.b64encode(
 
 
 def frps_get(path):
-    url = FRPS_API + path
-    parsed = urllib.parse.urlparse(url)
-    if parsed.scheme != 'http' or parsed.hostname not in ALLOWED_API_HOSTS:
-        raise ValueError('frps API host not allowlisted: %r' % parsed.hostname)
-    req = urllib.request.Request(url,
+    req = urllib.request.Request(FRPS_API + path,
                                  headers={'Authorization': 'Basic ' + AUTH})
     with urllib.request.urlopen(req, timeout=4) as r:
         return json.loads(r.read().decode())

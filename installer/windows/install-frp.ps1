@@ -151,6 +151,12 @@ transport.heartbeatTimeout = 90
 log.level = "info"
 log.maxDays = 3
 
+# live client admin UI on this machine: http://127.0.0.1:7400
+webServer.addr = "127.0.0.1"
+webServer.port = 7400
+webServer.user = "admin"
+webServer.password = "CHANGE_ME_ADMIN"
+
 [[proxies]]
 name = "my-app"
 type = "tcp"
@@ -320,6 +326,9 @@ function Connect-ToServer {
         New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
     }
 
+    # random password for the local client admin UI (http://127.0.0.1:7400)
+    $adminPwd = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 10 | ForEach-Object {[char]$_})
+
     $configContent = @"
 serverAddr = "$serverAddr"
 serverPort = $serverPort
@@ -341,6 +350,12 @@ transport.heartbeatTimeout = 90
 log.level = "info"
 log.maxDays = 3
 
+# live client admin UI on this machine: http://127.0.0.1:7400
+webServer.addr = "127.0.0.1"
+webServer.port = 7400
+webServer.user = "admin"
+webServer.password = "$adminPwd"
+
 [[proxies]]
 name = "$proxyName"
 type = "$proxyType"
@@ -358,6 +373,7 @@ remotePort = $remotePort
 
     Set-Content -Path $CONFIG_FILE -Value $configContent -Encoding UTF8
     Write-Host "Configuration saved to $CONFIG_FILE" -ForegroundColor Green
+    Write-Host "Client Admin UI: http://127.0.0.1:7400  (user: admin, password: $adminPwd)" -ForegroundColor Cyan
 
     # Validate config (verify is a subcommand and must come before -c)
     Write-Host "Validating configuration..." -ForegroundColor Yellow
